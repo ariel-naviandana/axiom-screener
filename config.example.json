@@ -7,7 +7,7 @@
     "macroName": "axiom_screener",
     "schedule": "0,10,20,30,40,50 * * * *",
     "runOnStart": false,
-    "profileDir": "",
+    "profileDir": "C:\\chrome-bot\\screener",
     "profileDirectory": ""
   },
   "watcher": {

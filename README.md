@@ -4,7 +4,7 @@ Dua scheduler UI.Vision yang jalan bersamaan di satu laptop:
 
 | Script | Macro | Chrome | Jadwal |
 |---|---|---|---|
-| `screener.js` (script 1) | `axiom_screener` | profil default | cron, default tiap 10 menit |
+| `screener.js` (script 1) | `axiom_screener` | `--user-data-dir=C:\chrome-bot\screener` | cron, default tiap 10 menit |
 | `watcher.js` (script 2) | `axiom_watcher` | `--user-data-dir=C:\chrome-bot\watcher` | min 5 menit, menyesuaikan jumlah coin |
 
 Masing-masing hanya mematikan Chrome miliknya sendiri (`lib/chrome.js`).
@@ -31,7 +31,8 @@ npm run watcher      (terminal 2)
 ```
 
 ## Setup sekali
-1. Profil Chrome watcher: `chrome --user-data-dir="C:\chrome-bot\watcher"`, install UI.Vision + XModules,
+1. Profil Chrome screener & watcher: `chrome --user-data-dir="C:\chrome-bot\screener"` dan
+   `chrome --user-data-dir="C:\chrome-bot\watcher"`, masing-masing install UI.Vision + XModules,
    aktifkan "Allow access to file URLs", storage hard drive dengan root folder `C:\uivision`,
    login Axiom & GMGN.
 2. Macro `axiom_watcher.json` ada di `C:\uivision\macros` (salinan di `macros/`).
@@ -47,6 +48,7 @@ ACTIVE (lolos screener) → WATCH (tidak lolos lagi / >15 menit) → DROPPED (ho
 WATCH/DROPPED yang lolos screener lagi kembali ACTIVE.
 
 ## Config per laptop
-- `screener.profileDir`: kosong = profil Chrome default (laptop scraping 24 jam).
-  Diisi (mis. `C:\chrome-bot\screener`) = profil terpisah, Chrome pribadi tidak ikut dimatikan.
+- `screener.profileDir` / `watcher.profileDir`: folder Chrome terpisah per bot (default
+  `C:\chrome-bot\screener` dan `C:\chrome-bot\watcher`). Tiap bot hanya mematikan Chrome-nya sendiri,
+  Chrome pribadi aman. Kosongkan `screener.profileDir` kalau ingin memakai User Data default Chrome.
 - `watcher.minIntervalMs`: jeda minimal antar run watcher (default 5 menit).
