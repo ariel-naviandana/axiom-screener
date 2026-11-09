@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Config lokal (tiap laptop beda). Template-nya: config.example.json
+config.json
+
+# Build exe
+dist/
+*.exe
+*.blob
+bundle-*.js
+sea-*.json
+
+# Arsip / sisa transfer
+*.tgz
+*.zip
+
+# Log & data runtime
+logs/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Workflow n8n (berisi chat ID & ID credential)
+n8n/

@@ -1,0 +1,1584 @@
+{
+  "Name": "axiom_screener",
+  "CreationDate": "2026-11-6",
+  "Commands": [
+    {
+      "Command": "comment",
+      "Target": "=== CONFIG ===",
+      "Value": "",
+      "Description": "Bagian pengaturan: semua variabel yang bisa diubah ada di sini"
+    },
+    {
+      "Command": "store",
+      "Target": "https://axiom.trade/pulse?chains=sol,robinhood,arc,bnb,ink,hype,base,eth&pulseChains=sol&trackerChains=sol,robinhood,arc,bnb,ink,hype,base,eth&discoverChains=sol,robinhood,arc,bnb,ink,hype,base,eth",
+      "Value": "AXIOM_URL",
+      "Description": "Alamat halaman Pulse di Axiom"
+    },
+    {
+      "Command": "store",
+      "Target": "10",
+      "Value": "TOP_N",
+      "Description": "Jumlah coin teratas di kolom Migrated yang diambil tiap siklus"
+    },
+    {
+      "Command": "store",
+      "Target": "800",
+      "Value": "MIN_HOLDERS",
+      "Description": "Minimal jumlah holder di Axiom; kurang dari ini, GMGN dilewati"
+    },
+    {
+      "Command": "store",
+      "Target": "60000",
+      "Value": "LOOP_PAUSE",
+      "Description": "Jeda (ms) antar siklus. 60000 = 1 menit"
+    },
+    {
+      "Command": "store",
+      "Target": "1",
+      "Value": "MAX_CYCLES",
+      "Description": "Batas jumlah siklus. 0 = jalan terus tanpa henti"
+    },
+    {
+      "Command": "store",
+      "Target": "axiom_screener.csv",
+      "Value": "CSV_FILE",
+      "Description": "Nama file hasil. Satu baris per coin per siklus (coin yang sama dicatat lagi di siklus berikutnya)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var d=new Date();var p=function(n){return ('0'+n).slice(-2)};var base=String(${CSV_FILE}).replace(/\\.csv$/i,'');return base+'_'+d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+'-'+p(d.getMinutes())+'-'+p(d.getSeconds())+'.csv';",
+      "Value": "CSV_FILE",
+      "Description": "Tambahkan tanggal dan jam saat macro dimulai ke nama file CSV"
+    },
+    {
+      "Command": "store",
+      "Target": "https://gmgn.ai/?chain=sol",
+      "Value": "GMGN_URL",
+      "Description": "Halaman awal GMGN (dipakai untuk mode pencarian)"
+    },
+    {
+      "Command": "store",
+      "Target": "1",
+      "Value": "GMGN_DIRECT",
+      "Description": "1 = buka langsung https://gmgn.ai/sol/token/<CA>"
+    },
+    {
+      "Command": "store",
+      "Target": "https://gmgn.ai/sol/token/",
+      "Value": "GMGN_TOKEN_URL",
+      "Description": "Awalan alamat token GMGN untuk mode GMGN_DIRECT=1"
+    },
+    {
+      "Command": "store",
+      "Target": "600",
+      "Value": "SCROLL_STEP",
+      "Description": "Jarak scroll (piksel) tiap percobaan saat baris belum ter-render"
+    },
+    {
+      "Command": "store",
+      "Target": "//*[@id=\"platform-layout-container\"]/main/div/div[2]/div[3]/section/div/div",
+      "Value": "GRID",
+      "Description": "XPath area list kolom Migrated yang bisa di-scroll (tanpa prefix xpath=)"
+    },
+    {
+      "Command": "store",
+      "Target": "//input[@name='new-search-input']",
+      "Value": "GMGN_INPUT",
+      "Description": "XPath input search GMGN (popup)"
+    },
+    {
+      "Command": "store",
+      "Target": "//input[@placeholder='Search name, CA, wallet']",
+      "Value": "GMGN_TRIGGER",
+      "Description": "Kotak pemicu search di beranda GMGN (membuka popup)"
+    },
+    {
+      "Command": "store",
+      "Target": "/html/body/div[5]/div/div[2]/div/div[2]/div/div/div[5]/div/div[2]/a/div[1]",
+      "Value": "GMGN_RESULT_ALT",
+      "Description": "XPath hasil search teratas buatan sendiri; dipakai kalau pencarian berdasarkan CA tidak ketemu (tanpa prefix xpath=)"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "done",
+      "Description": "Ubah ke 1 untuk menghentikan macro dengan rapi"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "total",
+      "Description": "Jumlah siklus yang sudah berjalan"
+    },
+    {
+      "Command": "store",
+      "Target": "[]",
+      "Value": "coinsJson",
+      "Description": "Daftar coin (CA dan nama) yang terbaca di siklus ini, format JSON"
+    },
+    {
+      "Command": "comment",
+      "Target": "=== LOOP UTAMA ===",
+      "Value": "",
+      "Description": "Satu siklus: baca daftar coin, lalu tiap coin diambil data Axiom dan GMGN, catat, jeda"
+    },
+    {
+      "Command": "while",
+      "Target": "${done} == 0 && (${MAX_CYCLES} == 0 || ${total} < ${MAX_CYCLES})",
+      "Value": "",
+      "Description": "Loop utama: jalan selama belum dihentikan dan belum melewati MAX_CYCLES"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return Number(${total}) + 1;",
+      "Value": "total",
+      "Description": "Tambah 1 hitungan siklus"
+    },
+    {
+      "Command": "echo",
+      "Target": "=== Siklus #${total} ===",
+      "Value": "blue",
+      "Description": "Penanda awal siklus"
+    },
+    {
+      "Command": "store",
+      "Target": "[]",
+      "Value": "coinsJson",
+      "Description": "Kosongkan daftar coin untuk siklus ini"
+    },
+    {
+      "Command": "comment",
+      "Target": "--- TAHAP 1: BACA DAFTAR COIN DI KOLOM MIGRATED ---",
+      "Value": "",
+      "Description": "Mengumpulkan CA dan nama dari TOP_N baris teratas"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "gridOk",
+      "Description": "1 = list Pulse terbaca"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "tries",
+      "Description": "Hitungan percobaan membuka Pulse"
+    },
+    {
+      "Command": "while",
+      "Target": "${gridOk} == 0 && ${tries} < 3",
+      "Value": "",
+      "Description": "Coba buka Pulse sampai 3 kali kalau halaman bermasalah"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!errorIgnore",
+      "Description": "Mulai blok aman: gagal membuka halaman tidak menghentikan macro"
+    },
+    {
+      "Command": "open",
+      "Target": "${AXIOM_URL}",
+      "Value": "",
+      "Description": "Buka halaman Pulse Axiom"
+    },
+    {
+      "Command": "pause",
+      "Target": "5000",
+      "Value": "",
+      "Description": "Tunggu list Pulse termuat"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!statusOK",
+      "Description": "Reset status sebelum langkah yang dicek"
+    },
+    {
+      "Command": "waitForElementPresent",
+      "Target": "xpath=${GRID}//div[@role='row' and @aria-rowindex='1']",
+      "Value": "",
+      "Description": "Tunggu baris pertama benar-benar ter-render (bukan hanya wadahnya)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return String(${!statusOK}) === 'true' ? 1 : 0;",
+      "Value": "gridOk",
+      "Description": "1 = list Pulse muncul, 0 = halaman bermasalah"
+    },
+    {
+      "Command": "store",
+      "Target": "false",
+      "Value": "!errorIgnore",
+      "Description": "Akhiri blok aman: error berikutnya kembali menghentikan macro"
+    },
+    {
+      "Command": "if",
+      "Target": "${gridOk} == 0",
+      "Value": "",
+      "Description": "List tidak muncul?"
+    },
+    {
+      "Command": "echo",
+      "Target": "Pulse belum termuat (percobaan ${tries}), coba lagi...",
+      "Value": "orange",
+      "Description": "Info: halaman Axiom bermasalah"
+    },
+    {
+      "Command": "pause",
+      "Target": "5000",
+      "Value": "",
+      "Description": "Jeda sebelum membuka ulang"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: List tidak muncul?"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return Number(${tries}) + 1;",
+      "Value": "tries",
+      "Description": "Tambah 1 percobaan"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Coba buka Pulse sampai 3 kali"
+    },
+    {
+      "Command": "if",
+      "Target": "${gridOk} == 1",
+      "Value": "",
+      "Description": "Pulse terbaca? (kalau tidak, siklus dilewati)"
+    },
+    {
+      "Command": "store",
+      "Target": "1",
+      "Value": "i",
+      "Description": "Nomor baris yang dibaca (aria-rowindex, urutan tampilan dari atas)"
+    },
+    {
+      "Command": "while",
+      "Target": "${i} <= ${TOP_N}",
+      "Value": "",
+      "Description": "Baca baris 1 sampai TOP_N"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "ca",
+      "Description": "Reset CA (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "cname",
+      "Description": "Reset nama coin (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "rowCnt",
+      "Description": "Reset jumlah baris yang ditemukan"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!errorIgnore",
+      "Description": "Mulai blok aman: pembacaan baris tidak menghentikan macro"
+    },
+    {
+      "Command": "storeXpathCount",
+      "Target": "xpath=${GRID}//div[@role='row' and @aria-rowindex='${i}']",
+      "Value": "rowCnt",
+      "Description": "Cek apakah baris ke-i ter-render"
+    },
+    {
+      "Command": "store",
+      "Target": "false",
+      "Value": "!errorIgnore",
+      "Description": "Akhiri blok aman: error berikutnya kembali menghentikan macro"
+    },
+    {
+      "Command": "if",
+      "Target": "${rowCnt} == 0",
+      "Value": "",
+      "Description": "Baris belum ter-render?"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "sct",
+      "Description": "Hitungan percobaan scroll list Pulse"
+    },
+    {
+      "Command": "while",
+      "Target": "${rowCnt} == 0 && ${sct} < 3",
+      "Value": "",
+      "Description": "Scroll list sampai baris yang dicari ter-render (list Axiom virtual, hanya baris di sekitar layar yang ada di halaman)"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!errorIgnore",
+      "Description": "Mulai blok aman: scroll boleh gagal tanpa menghentikan macro"
+    },
+    {
+      "Command": "executeScript",
+      "Target": "var g=document.evaluate(${GRID},document,null,9,null).singleNodeValue; if(g){g.scrollTop=g.scrollTop+Number(${SCROLL_STEP});} return 1;",
+      "Value": "",
+      "Description": "Scroll lewat JavaScript halaman (bisa gagal kalau diblokir CSP, lalu dicoba cara lain)"
+    },
+    {
+      "Command": "sendKeys",
+      "Target": "xpath=${GRID}",
+      "Value": "${KEY_PAGE_DOWN}",
+      "Description": "Cara lain: tekan Page Down di list"
+    },
+    {
+      "Command": "store",
+      "Target": "false",
+      "Value": "!errorIgnore",
+      "Description": "Akhiri blok aman: error berikutnya kembali menghentikan macro"
+    },
+    {
+      "Command": "pause",
+      "Target": "900",
+      "Value": "",
+      "Description": "Beri waktu baris baru ter-render"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!errorIgnore",
+      "Description": "Mulai blok aman: pembacaan jumlah baris"
+    },
+    {
+      "Command": "storeXpathCount",
+      "Target": "xpath=${GRID}//div[@role='row' and @aria-rowindex='${i}']",
+      "Value": "rowCnt",
+      "Description": "Hitung ulang baris ke-i setelah scroll"
+    },
+    {
+      "Command": "store",
+      "Target": "false",
+      "Value": "!errorIgnore",
+      "Description": "Akhiri blok aman: error berikutnya kembali menghentikan macro"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return Number(${sct}) + 1;",
+      "Value": "sct",
+      "Description": "Tambah 1 percobaan scroll"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: scroll list Pulse"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Baris belum ter-render?"
+    },
+    {
+      "Command": "if",
+      "Target": "${rowCnt} > 0",
+      "Value": "",
+      "Description": "Baris ditemukan?"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!errorIgnore",
+      "Description": "Mulai blok aman: pembacaan CA dan nama"
+    },
+    {
+      "Command": "storeAttribute",
+      "Target": "xpath=${GRID}//div[@role='row' and @aria-rowindex='${i}']//div[@data-pulse-token-address]@data-pulse-token-address",
+      "Value": "ca",
+      "Description": "Baca CA lengkap dari atribut kartu"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=${GRID}//div[@role='row' and @aria-rowindex='${i}']//div[contains(@class,'text-textPrimary') and contains(@class,'truncate') and contains(@class,'text-[16px]')]",
+      "Value": "cname",
+      "Description": "Baca nama (simbol) coin"
+    },
+    {
+      "Command": "store",
+      "Target": "false",
+      "Value": "!errorIgnore",
+      "Description": "Akhiri blok aman: error berikutnya kembali menghentikan macro"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var a=JSON.parse(${coinsJson}); var c=String(${ca}); if(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(c) && !a.some(function(x){return x.ca===c;})){a.push({ca:c,name:String(${cname}).replace(/[,\\r\\n\"]/g,' ').trim()});} return JSON.stringify(a);",
+      "Value": "coinsJson",
+      "Description": "Tambahkan coin ke daftar kalau CA valid dan belum ada"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Baris ditemukan?"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return Number(${i}) + 1;",
+      "Value": "i",
+      "Description": "Lanjut ke baris berikutnya"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Baca baris 1 sampai TOP_N"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return JSON.parse(${coinsJson}).length;",
+      "Value": "n",
+      "Description": "Jumlah coin yang terbaca"
+    },
+    {
+      "Command": "echo",
+      "Target": "${n} coin terbaca dari kolom Migrated (target ${TOP_N})",
+      "Value": "blue",
+      "Description": "Info jumlah coin yang terbaca di siklus ini"
+    },
+    {
+      "Command": "comment",
+      "Target": "--- TAHAP 2: TIAP COIN, AMBIL DATA AXIOM LALU GMGN ---",
+      "Value": "",
+      "Description": "Per coin: buka detail di Axiom, catat, cari di GMGN, catat, tulis satu baris CSV"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "j",
+      "Description": "Indeks coin yang sedang diproses (mulai 0)"
+    },
+    {
+      "Command": "while",
+      "Target": "${j} < ${n}",
+      "Value": "",
+      "Description": "Proses semua coin yang terbaca"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var a=JSON.parse(${coinsJson}); return a[${j}].ca;",
+      "Value": "ca",
+      "Description": "CA coin ini"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var a=JSON.parse(${coinsJson}); return a[${j}].name;",
+      "Value": "cname",
+      "Description": "Nama coin ini"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var d=new Date();var p=function(n){return ('0'+n).slice(-2)};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());",
+      "Value": "ts",
+      "Description": "Waktu pencatatan coin ini"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return Number(${j}) + 1;",
+      "Value": "jn",
+      "Description": "Nomor coin (mulai 1) untuk tampilan log"
+    },
+    {
+      "Command": "echo",
+      "Target": "--- Coin ${jn} dari ${n}: ${cname} (${ca}) ---",
+      "Value": "green",
+      "Description": "Info coin yang sedang diproses"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "rowOk",
+      "Description": "1 = baris coin ketemu dan nama berhasil diklik"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "detOk",
+      "Description": "1 = halaman detail Axiom termuat dan CA cocok"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "gmOk",
+      "Description": "1 = halaman token GMGN termuat"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "holderOk",
+      "Description": "1 = holder memenuhi minimal"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "holderT",
+      "Description": "Teks tab Holders (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "aTop10T",
+      "Description": "Reset teks aTop10 (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "aDevT",
+      "Description": "Reset teks aDev (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "aSnipersT",
+      "Description": "Reset teks aSnipers (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "aInsidersT",
+      "Description": "Reset teks aInsiders (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "aBundlersT",
+      "Description": "Reset teks aBundlers (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "aLpBurnedT",
+      "Description": "Reset teks aLpBurned (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "aHoldersT",
+      "Description": "Reset teks aHolders (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "aProTradersT",
+      "Description": "Reset teks aProTraders (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "aDexPaidT",
+      "Description": "Reset teks aDexPaid (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gTop10T",
+      "Description": "Reset teks gTop10 (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gDevT",
+      "Description": "Reset teks gDev (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gHoldersT",
+      "Description": "Reset teks gHolders (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gSnipersT",
+      "Description": "Reset teks gSnipers (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gInsidersT",
+      "Description": "Reset teks gInsiders (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gPhishingT",
+      "Description": "Reset teks gPhishing (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gBundlerT",
+      "Description": "Reset teks gBundler (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gDexPaidT",
+      "Description": "Reset teks gDexPaid (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gBurntT",
+      "Description": "Reset teks gBurnt (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gRugT",
+      "Description": "Reset teks gRug (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gNoMintTxtT",
+      "Description": "Reset teks gNoMintTxt (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gNoBlTxtT",
+      "Description": "Reset teks gNoBlTxt (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gNoMintIconT",
+      "Description": "Reset teks gNoMintIcon (x = belum terbaca)"
+    },
+    {
+      "Command": "store",
+      "Target": "x",
+      "Value": "gNoBlIconT",
+      "Description": "Reset teks gNoBlIcon (x = belum terbaca)"
+    },
+    {
+      "Command": "comment",
+      "Target": "Axiom: kembali ke Pulse, cari baris coin berdasarkan CA, klik NAMA coin (bukan gambar)",
+      "Value": "",
+      "Description": "Cari berdasarkan CA supaya tidak salah coin walau urutan list bergeser"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!errorIgnore",
+      "Description": "Mulai blok aman: langkah di Axiom tidak menghentikan macro kalau gagal"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!statusOK",
+      "Description": "Reset status sebelum langkah yang dicek"
+    },
+    {
+      "Command": "open",
+      "Target": "${AXIOM_URL}",
+      "Value": "",
+      "Description": "Buka Pulse (urutan list bisa sudah berubah, jadi baris dicari lewat CA)"
+    },
+    {
+      "Command": "pause",
+      "Target": "4500",
+      "Value": "",
+      "Description": "Tunggu list Pulse termuat"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "rowCnt",
+      "Description": "Reset jumlah baris yang ditemukan"
+    },
+    {
+      "Command": "storeXpathCount",
+      "Target": "xpath=//div[@data-pulse-token-address='${ca}']",
+      "Value": "rowCnt",
+      "Description": "Cek apakah baris coin ini ter-render"
+    },
+    {
+      "Command": "if",
+      "Target": "${rowCnt} == 0",
+      "Value": "",
+      "Description": "Baris coin belum ter-render?"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "sct",
+      "Description": "Hitungan percobaan scroll list Pulse"
+    },
+    {
+      "Command": "while",
+      "Target": "${rowCnt} == 0 && ${sct} < 3",
+      "Value": "",
+      "Description": "Scroll list sampai baris yang dicari ter-render (list Axiom virtual, hanya baris di sekitar layar yang ada di halaman)"
+    },
+    {
+      "Command": "executeScript",
+      "Target": "var g=document.evaluate(${GRID},document,null,9,null).singleNodeValue; if(g){g.scrollTop=g.scrollTop+Number(${SCROLL_STEP});} return 1;",
+      "Value": "",
+      "Description": "Scroll lewat JavaScript halaman (bisa gagal kalau diblokir CSP, lalu dicoba cara lain)"
+    },
+    {
+      "Command": "sendKeys",
+      "Target": "xpath=${GRID}",
+      "Value": "${KEY_PAGE_DOWN}",
+      "Description": "Cara lain: tekan Page Down di list"
+    },
+    {
+      "Command": "pause",
+      "Target": "900",
+      "Value": "",
+      "Description": "Beri waktu baris baru ter-render"
+    },
+    {
+      "Command": "storeXpathCount",
+      "Target": "xpath=//div[@data-pulse-token-address='${ca}']",
+      "Value": "rowCnt",
+      "Description": "Hitung ulang baris coin setelah scroll"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return Number(${sct}) + 1;",
+      "Value": "sct",
+      "Description": "Tambah 1 percobaan scroll"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: scroll list Pulse"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Baris coin belum ter-render?"
+    },
+    {
+      "Command": "if",
+      "Target": "${rowCnt} > 0",
+      "Value": "",
+      "Description": "Baris coin ketemu?"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!statusOK",
+      "Description": "Reset status sebelum langkah yang dicek"
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=//div[@data-pulse-token-address='${ca}']//div[contains(@class,'text-textPrimary') and contains(@class,'truncate') and contains(@class,'text-[16px]')]",
+      "Value": "",
+      "Description": "Klik NAMA coin untuk membuka halaman detail"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return String(${!statusOK}) === 'true' ? 1 : 0;",
+      "Value": "rowOk",
+      "Description": "1 = klik nama coin berhasil"
+    },
+    {
+      "Command": "pause",
+      "Target": "3500",
+      "Value": "",
+      "Description": "Tunggu halaman detail termuat"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!statusOK",
+      "Description": "Reset status sebelum langkah yang dicek"
+    },
+    {
+      "Command": "waitForElementPresent",
+      "Target": "xpath=//a[contains(@href,'solscan.io/account/${ca}')]",
+      "Value": "",
+      "Description": "Tunggu halaman detail dengan CA yang sama muncul (tautan Solscan CA), supaya data tidak tertukar"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return String(${!statusOK}) === 'true' ? 1 : 0;",
+      "Value": "detOk",
+      "Description": "1 = detail termuat dan CA cocok, 0 = gagal"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Baris coin ketemu?"
+    },
+    {
+      "Command": "if",
+      "Target": "${detOk} == 1",
+      "Value": "",
+      "Description": "Detail Axiom siap dibaca?"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//span[normalize-space(text())='Top 10 H.']/ancestor::div[2]/div[1]/span)[1]",
+      "Value": "aTop10T",
+      "Description": "Baca Top 10 H. dari kotak statistik Axiom"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//span[normalize-space(text())='Dev H.']/ancestor::div[2]/div[1]/span)[1]",
+      "Value": "aDevT",
+      "Description": "Baca Dev H. dari kotak statistik Axiom"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//span[normalize-space(text())='Snipers H.']/ancestor::div[2]/div[1]/span)[1]",
+      "Value": "aSnipersT",
+      "Description": "Baca Snipers H. dari kotak statistik Axiom"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//span[normalize-space(text())='Insiders']/ancestor::div[2]/div[1]/span)[1]",
+      "Value": "aInsidersT",
+      "Description": "Baca Insiders dari kotak statistik Axiom"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//span[normalize-space(text())='Bundlers']/ancestor::div[2]/div[1]/span)[1]",
+      "Value": "aBundlersT",
+      "Description": "Baca Bundlers dari kotak statistik Axiom"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//span[normalize-space(text())='LP Burned']/ancestor::div[2]/div[1]/span)[1]",
+      "Value": "aLpBurnedT",
+      "Description": "Baca LP Burned dari kotak statistik Axiom"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//span[normalize-space(text())='Holders']/ancestor::div[2]/div[1]/span)[1]",
+      "Value": "aHoldersT",
+      "Description": "Baca Holders dari kotak statistik Axiom"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//span[normalize-space(text())='Pro Traders']/ancestor::div[2]/div[1]/span)[1]",
+      "Value": "aProTradersT",
+      "Description": "Baca Pro Traders dari kotak statistik Axiom"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//span[normalize-space(text())='Dex Paid']/ancestor::div[2]/div[1]/span)[1]",
+      "Value": "aDexPaidT",
+      "Description": "Baca Dex Paid dari kotak statistik Axiom"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Detail Axiom siap dibaca?"
+    },
+    {
+      "Command": "store",
+      "Target": "false",
+      "Value": "!errorIgnore",
+      "Description": "Akhiri blok aman: error berikutnya kembali menghentikan macro"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${aTop10T}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "aTop10",
+      "Description": "Axiom Top 10 H. sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${aDevT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "aDev",
+      "Description": "Axiom Dev H. sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${aSnipersT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "aSnipers",
+      "Description": "Axiom Snipers H. sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${aInsidersT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "aInsiders",
+      "Description": "Axiom Insiders sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${aBundlersT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "aBundlers",
+      "Description": "Axiom Bundlers sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${aLpBurnedT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "aLpBurned",
+      "Description": "Axiom LP Burned sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${aHoldersT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "aHolders",
+      "Description": "Axiom Holders sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${aProTradersT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "aProTraders",
+      "Description": "Axiom Pro Traders sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var s=String(${aDexPaidT}).replace(/\\s+/g,' ').trim(); return (s===''||s==='x') ? '-' : s;",
+      "Value": "aDexPaid",
+      "Description": "Axiom Dex Paid sebagai teks (Paid/Unpaid)"
+    },
+    {
+      "Command": "if",
+      "Target": "${detOk} == 1",
+      "Value": "",
+      "Description": "Detail Axiom termuat? Cek tab Holders"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!errorIgnore",
+      "Description": "Blok aman"
+    },
+    {
+      "Command": "pause",
+      "Target": "1000",
+      "Value": "",
+      "Description": "Beri waktu tab Holders terisi"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//button//span[starts-with(normalize-space(.),'Holders (')])[1]",
+      "Value": "holderT",
+      "Description": "Baca teks tab 'Holders (167)'"
+    },
+    {
+      "Command": "store",
+      "Target": "false",
+      "Value": "!errorIgnore",
+      "Description": "Akhiri blok aman"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${holderT}).match(/\\((\\d[\\d,]*)\\)/); var h=m ? parseInt(m[1].replace(/,/g,''),10) : Number(${aHolders}); return h>=Number(${MIN_HOLDERS}) ? 1 : 0;",
+      "Value": "holderOk",
+      "Description": "1 = holder >= MIN_HOLDERS (kalau tab tidak terbaca, pakai aHolders dari kotak statistik)"
+    },
+    {
+      "Command": "echo",
+      "Target": "Holders tab: ${holderT} | lolos=${holderOk}",
+      "Value": "orange",
+      "Description": "Info hasil cek holder"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: cek holder"
+    },
+    {
+      "Command": "comment",
+      "Target": "GMGN: buka halaman token lalu baca kotak statistik",
+      "Value": "",
+      "Description": "Mode pencarian atau langsung lewat URL, sesuai GMGN_DIRECT"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!errorIgnore",
+      "Description": "Mulai blok aman: langkah di GMGN tidak menghentikan macro kalau gagal"
+    },
+    {
+      "Command": "store",
+      "Target": "15",
+      "Value": "!timeout_wait",
+      "Description": "Timeout lebih panjang untuk halaman GMGN (detik)"
+    },
+    {
+      "Command": "if",
+      "Target": "${holderOk} == 1",
+      "Value": "",
+      "Description": "Hanya cek GMGN kalau holder memenuhi"
+    },
+    {
+      "Command": "if",
+      "Target": "${GMGN_DIRECT} == 1",
+      "Value": "",
+      "Description": "Mode buka langsung lewat URL token?"
+    },
+    {
+      "Command": "open",
+      "Target": "${GMGN_TOKEN_URL}${ca}",
+      "Value": "",
+      "Description": "Buka halaman token GMGN langsung dengan CA"
+    },
+    {
+      "Command": "else",
+      "Target": "",
+      "Value": "",
+      "Description": "Sebaliknya: mode pencarian lewat kotak search"
+    },
+    {
+      "Command": "open",
+      "Target": "${GMGN_URL}",
+      "Value": "",
+      "Description": "Buka beranda GMGN"
+    },
+    {
+      "Command": "pause",
+      "Target": "4000",
+      "Value": "",
+      "Description": "Tunggu beranda GMGN termuat"
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=${GMGN_TRIGGER}",
+      "Value": "",
+      "Description": "Buka popup search GMGN"
+    },
+    {
+      "Command": "pause",
+      "Target": "1500",
+      "Value": "",
+      "Description": "Tunggu popup muncul"
+    },
+    {
+      "Command": "waitForElementPresent",
+      "Target": "xpath=${GMGN_INPUT}",
+      "Value": "",
+      "Description": "Tunggu input search di popup"
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=${GMGN_INPUT}",
+      "Value": "",
+      "Description": "Fokus ke input search"
+    },
+    {
+      "Command": "type",
+      "Target": "xpath=${GMGN_INPUT}",
+      "Value": "${ca}",
+      "Description": "Ketik CA coin"
+    },
+    {
+      "Command": "pause",
+      "Target": "2500",
+      "Value": "",
+      "Description": "Tunggu hasil pencarian muncul"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var c=String(${ca}); return c.slice(0,4)+'...'+c.slice(-4);",
+      "Value": "caShort",
+      "Description": "Bentuk singkat CA (4 huruf awal...4 huruf akhir) seperti yang tampil di hasil GMGN"
+    },
+    {
+      "Command": "store",
+      "Target": "0",
+      "Value": "resOk",
+      "Description": "1 = hasil pencarian berhasil diklik"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!statusOK",
+      "Description": "Reset status sebelum langkah yang dicek"
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=(//a[.//p[normalize-space(.)='${caShort}']])[1]",
+      "Value": "",
+      "Description": "Klik hasil pencarian yang CA-nya cocok"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return String(${!statusOK}) === 'true' ? 1 : 0;",
+      "Value": "resOk",
+      "Description": "1 = klik hasil berhasil"
+    },
+    {
+      "Command": "if",
+      "Target": "${resOk} == 0",
+      "Value": "",
+      "Description": "Hasil berdasarkan CA tidak ketemu?"
+    },
+    {
+      "Command": "click",
+      "Target": "xpath=${GMGN_RESULT_ALT}",
+      "Value": "",
+      "Description": "Cara cadangan: klik hasil teratas lewat XPath buatan sendiri"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Hasil berdasarkan CA tidak ketemu?"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Mode buka langsung lewat URL token?"
+    },
+    {
+      "Command": "store",
+      "Target": "true",
+      "Value": "!statusOK",
+      "Description": "Reset status sebelum langkah yang dicek"
+    },
+    {
+      "Command": "waitForElementPresent",
+      "Target": "xpath=//*[@data-testid='token-detail-info-top_10']",
+      "Value": "",
+      "Description": "Tunggu kotak statistik GMGN muncul"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return String(${!statusOK}) === 'true' ? 1 : 0;",
+      "Value": "gmOk",
+      "Description": "1 = statistik GMGN muncul, 0 = gagal"
+    },
+    {
+      "Command": "if",
+      "Target": "${gmOk} == 1",
+      "Value": "",
+      "Description": "Statistik GMGN siap dibaca?"
+    },
+    {
+      "Command": "pause",
+      "Target": "10000",
+      "Value": "",
+      "Description": "Beri waktu nilai statistik terisi penuh"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//*[@data-testid='token-detail-info-top_10']//*[contains(@class,'info-item-value')])[1]",
+      "Value": "gTop10T",
+      "Description": "Baca Top 10 dari statistik GMGN"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//*[@data-testid='token-detail-info-dev_hold']//*[contains(@class,'info-item-value')])[1]",
+      "Value": "gDevT",
+      "Description": "Baca DEV dari statistik GMGN"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//*[@data-testid='token-detail-info-holders']//*[contains(@class,'info-item-value')])[1]",
+      "Value": "gHoldersT",
+      "Description": "Baca Holders dari statistik GMGN"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//*[@data-testid='token-detail-info-snipers']//*[contains(@class,'value-node-item')])[1]",
+      "Value": "gSnipersT",
+      "Description": "Baca Snipers dari statistik GMGN"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//*[@data-testid='token-detail-info-rat']//*[contains(@class,'item-value')])[1]",
+      "Value": "gInsidersT",
+      "Description": "Baca Insiders dari statistik GMGN"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//*[@data-testid='token-detail-info-phishing_hold']//*[contains(@class,'item-value')])[1]",
+      "Value": "gPhishingT",
+      "Description": "Baca Phishing dari statistik GMGN"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//*[@data-testid='token-detail-bundler-badge']//*[contains(@class,'item-value')])[1]",
+      "Value": "gBundlerT",
+      "Description": "Baca Bundler dari statistik GMGN"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//*[@data-testid='token-detail-info-dex_pay']//*[contains(@class,'info-item-value')])[1]",
+      "Value": "gDexPaidT",
+      "Description": "Baca Dex Paid dari statistik GMGN"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//*[@data-testid='token-detail-info-burnt2']//*[contains(@class,'info-item-value')])[1]",
+      "Value": "gBurntT",
+      "Description": "Baca Burnt dari statistik GMGN"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//*[@data-testid='token-detail-info-rug_probabilty']//*[contains(@class,'info-item-value')])[1]",
+      "Value": "gRugT",
+      "Description": "Baca Rug % dari statistik GMGN"
+    },
+    {
+      "Command": "storeAttribute",
+      "Target": "xpath=(//*[@data-testid='token-detail-info-mintable']//*[name()='svg'])[1]@data-icon",
+      "Value": "gNoMintIconT",
+      "Description": "Baca nama ikon status NoMint (ikon centang = aman)"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//*[@data-testid='token-detail-info-mintable']//*[contains(@class,'info-item-value')])[1]",
+      "Value": "gNoMintTxtT",
+      "Description": "Baca teks NoMint (cadangan kalau bukan ikon centang)"
+    },
+    {
+      "Command": "storeAttribute",
+      "Target": "xpath=(//*[@data-testid='token-detail-info-blacklist']//*[name()='svg'])[1]@data-icon",
+      "Value": "gNoBlIconT",
+      "Description": "Baca nama ikon status No Blacklist (ikon centang = aman)"
+    },
+    {
+      "Command": "storeText",
+      "Target": "xpath=(//*[@data-testid='token-detail-info-blacklist']//*[contains(@class,'info-item-value')])[1]",
+      "Value": "gNoBlTxtT",
+      "Description": "Baca teks No Blacklist (cadangan kalau bukan ikon centang)"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Statistik GMGN siap dibaca?"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: hanya cek GMGN kalau holder memenuhi"
+    },
+    {
+      "Command": "store",
+      "Target": "10",
+      "Value": "!timeout_wait",
+      "Description": "Kembalikan timeout default"
+    },
+    {
+      "Command": "store",
+      "Target": "false",
+      "Value": "!errorIgnore",
+      "Description": "Akhiri blok aman: error berikutnya kembali menghentikan macro"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${gTop10T}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "gTop10",
+      "Description": "GMGN Top 10 sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${gDevT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "gDev",
+      "Description": "GMGN DEV sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${gHoldersT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "gHolders",
+      "Description": "GMGN Holders sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${gSnipersT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "gSnipers",
+      "Description": "GMGN Snipers sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${gInsidersT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "gInsiders",
+      "Description": "GMGN Insiders sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${gPhishingT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "gPhishing",
+      "Description": "GMGN Phishing sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${gBundlerT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "gBundler",
+      "Description": "GMGN Bundler sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var s=String(${gDexPaidT}).replace(/\\s+/g,' ').trim(); return (s===''||s==='x') ? '-' : s;",
+      "Value": "gDexPaid",
+      "Description": "GMGN Dex Paid sebagai teks"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${gBurntT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "gBurnt",
+      "Description": "GMGN Burnt sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var m=String(${gRugT}).match(/-?\\d[\\d,]*\\.?\\d*/); return m ? parseFloat(m[0].replace(/,/g,'')) : -1;",
+      "Value": "gRug",
+      "Description": "GMGN Rug % sebagai angka (-1 = tidak terbaca)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var i=String(${gNoMintIconT}); var t=String(${gNoMintTxtT}).replace(/\\s+/g,' ').trim(); if(/success/i.test(i)){return 'OK';} if(i!=='x'&&i!==''){return 'BAD:'+i.replace(/^Icon/,'').replace(/16pxRegular$/,'');} return (t!==''&&t!=='x') ? 'BAD:'+t : '-';",
+      "Value": "gNoMint",
+      "Description": "GMGN NoMint: OK kalau ikon centang, selain itu BAD:<keterangan>, - kalau tidak terbaca"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var i=String(${gNoBlIconT}); var t=String(${gNoBlTxtT}).replace(/\\s+/g,' ').trim(); if(/success/i.test(i)){return 'OK';} if(i!=='x'&&i!==''){return 'BAD:'+i.replace(/^Icon/,'').replace(/16pxRegular$/,'');} return (t!==''&&t!=='x') ? 'BAD:'+t : '-';",
+      "Value": "gNoBlacklist",
+      "Description": "GMGN No Blacklist: OK kalau ikon centang, selain itu BAD:<keterangan>, - kalau tidak terbaca"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var s=[]; if(Number(${rowOk})!==1){s.push('ROW_GAGAL');} else if(Number(${detOk})!==1){s.push('AXIOM_GAGAL');} else if(Number(${holderOk})!==1){s.push('SKIP_HOLDER');} else if(Number(${gmOk})!==1){s.push('GMGN_GAGAL');} return s.length ? s.join('+') : 'OK';",
+      "Value": "status",
+      "Description": "OK, ROW_GAGAL, AXIOM_GAGAL, SKIP_HOLDER, atau GMGN_GAGAL"
+    },
+    {
+      "Command": "echo",
+      "Target": "${ts} | ${cname} | Axiom top10=${aTop10} holders=${aHolders} | GMGN top10=${gTop10} holders=${gHolders} rug=${gRug} | ${status}",
+      "Value": "green",
+      "Description": "Ringkasan data coin ini"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var d=new Date();var p=function(n){return ('0'+n).slice(-2)};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());",
+      "Value": "finishTs",
+      "Description": "Waktu pencatatan coin ini"
+    },
+    {
+      "Command": "store",
+      "Target": "${finishTs}",
+      "Value": "!csvLine",
+      "Description": "Kolom 1 axiom_screener.csv: waktu"
+    },
+    {
+      "Command": "store",
+      "Target": "${cname}",
+      "Value": "!csvLine",
+      "Description": "Kolom 2 axiom_screener.csv: nama coin"
+    },
+    {
+      "Command": "store",
+      "Target": "${ca}",
+      "Value": "!csvLine",
+      "Description": "Kolom 3 axiom_screener.csv: contract address"
+    },
+    {
+      "Command": "store",
+      "Target": "${aTop10}",
+      "Value": "!csvLine",
+      "Description": "Kolom 4 axiom_screener.csv: Axiom Top 10 H. (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${aDev}",
+      "Value": "!csvLine",
+      "Description": "Kolom 5 axiom_screener.csv: Axiom Dev H. (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${aSnipers}",
+      "Value": "!csvLine",
+      "Description": "Kolom 6 axiom_screener.csv: Axiom Snipers H. (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${aInsiders}",
+      "Value": "!csvLine",
+      "Description": "Kolom 7 axiom_screener.csv: Axiom Insiders (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${aBundlers}",
+      "Value": "!csvLine",
+      "Description": "Kolom 8 axiom_screener.csv: Axiom Bundlers (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${aLpBurned}",
+      "Value": "!csvLine",
+      "Description": "Kolom 9 axiom_screener.csv: Axiom LP Burned (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${aHolders}",
+      "Value": "!csvLine",
+      "Description": "Kolom 10 axiom_screener.csv: Axiom Holders"
+    },
+    {
+      "Command": "store",
+      "Target": "${aProTraders}",
+      "Value": "!csvLine",
+      "Description": "Kolom 11 axiom_screener.csv: Axiom Pro Traders"
+    },
+    {
+      "Command": "store",
+      "Target": "${aDexPaid}",
+      "Value": "!csvLine",
+      "Description": "Kolom 12 axiom_screener.csv: Axiom Dex Paid"
+    },
+    {
+      "Command": "store",
+      "Target": "${gTop10}",
+      "Value": "!csvLine",
+      "Description": "Kolom 13 axiom_screener.csv: GMGN Top 10 (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${gDev}",
+      "Value": "!csvLine",
+      "Description": "Kolom 14 axiom_screener.csv: GMGN DEV (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${gHolders}",
+      "Value": "!csvLine",
+      "Description": "Kolom 15 axiom_screener.csv: GMGN Holders"
+    },
+    {
+      "Command": "store",
+      "Target": "${gSnipers}",
+      "Value": "!csvLine",
+      "Description": "Kolom 16 axiom_screener.csv: GMGN Snipers (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${gInsiders}",
+      "Value": "!csvLine",
+      "Description": "Kolom 17 axiom_screener.csv: GMGN Insiders (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${gPhishing}",
+      "Value": "!csvLine",
+      "Description": "Kolom 18 axiom_screener.csv: GMGN Phishing (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${gBundler}",
+      "Value": "!csvLine",
+      "Description": "Kolom 19 axiom_screener.csv: GMGN Bundler (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${gDexPaid}",
+      "Value": "!csvLine",
+      "Description": "Kolom 20 axiom_screener.csv: GMGN Dex Paid"
+    },
+    {
+      "Command": "store",
+      "Target": "${gNoMint}",
+      "Value": "!csvLine",
+      "Description": "Kolom 21 axiom_screener.csv: GMGN NoMint"
+    },
+    {
+      "Command": "store",
+      "Target": "${gNoBlacklist}",
+      "Value": "!csvLine",
+      "Description": "Kolom 22 axiom_screener.csv: GMGN No Blacklist"
+    },
+    {
+      "Command": "store",
+      "Target": "${gBurnt}",
+      "Value": "!csvLine",
+      "Description": "Kolom 23 axiom_screener.csv: GMGN Burnt (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${gRug}",
+      "Value": "!csvLine",
+      "Description": "Kolom 24 axiom_screener.csv: GMGN Rug (%)"
+    },
+    {
+      "Command": "store",
+      "Target": "${status}",
+      "Value": "!csvLine",
+      "Description": "Kolom 25 axiom_screener.csv: status"
+    },
+    {
+      "Command": "csvSave",
+      "Target": "${CSV_FILE}",
+      "Value": "",
+      "Description": "Tulis satu baris untuk coin ini (25 kolom)"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return Number(${j}) + 1;",
+      "Value": "j",
+      "Description": "Lanjut ke coin berikutnya"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Proses semua coin yang terbaca"
+    },
+    {
+      "Command": "else",
+      "Target": "",
+      "Value": "",
+      "Description": "Sebaliknya: Pulse tidak terbaca"
+    },
+    {
+      "Command": "echo",
+      "Target": "Siklus dilewati: list Pulse tidak terbaca setelah 3 percobaan",
+      "Value": "red",
+      "Description": "Info: halaman Axiom bermasalah, siklus dilewati"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Pulse terbaca?"
+    },
+    {
+      "Command": "echo",
+      "Target": "Siklus #${total} selesai. Jeda ${LOOP_PAUSE} ms sebelum siklus berikutnya",
+      "Value": "blue",
+      "Description": "Info akhir siklus"
+    },
+    {
+      "Command": "pause",
+      "Target": "${LOOP_PAUSE}",
+      "Value": "",
+      "Description": "Jeda antar siklus"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Loop utama"
+    },
+    {
+      "Command": "echo",
+      "Target": "axiom_screener selesai (${total} siklus)",
+      "Value": "green",
+      "Description": "Info macro selesai"
+    }
+  ]
+}

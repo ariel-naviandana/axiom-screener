@@ -1,0 +1,19 @@
+{
+  "name": "axiom-screener-bot",
+  "version": "1.0.0",
+  "description": "Scheduler UI.Vision untuk Axiom Screener (script 1) dan Axiom Watcher (script 2)",
+  "main": "screener.js",
+  "scripts": {
+    "screener": "node screener.js",
+    "watcher": "node watcher.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "node-cron": "^4.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ariel-naviandana/axiom-screener.git"
+  },
+  "homepage": "https://github.com/ariel-naviandana/axiom-screener#readme"
+}

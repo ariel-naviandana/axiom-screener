@@ -1,0 +1,18 @@
+Build 2 exe (jalankan di PowerShell, di folder project). config.json taruh di samping exe.
+
+npm install
+npm install -g esbuild
+
+// screener.exe
+esbuild screener.js --bundle --platform=node --outfile=bundle-screener.js
+Set-Content sea-screener.json '{ "main": "bundle-screener.js", "output": "sea-screener.blob" }'
+node --experimental-sea-config sea-screener.json
+node -e "require('fs').copyFileSync(process.execPath, 'axiom-screener.exe')"
+npx postject axiom-screener.exe NODE_SEA_BLOB sea-screener.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+
+// watcher.exe
+esbuild watcher.js --bundle --platform=node --outfile=bundle-watcher.js
+Set-Content sea-watcher.json '{ "main": "bundle-watcher.js", "output": "sea-watcher.blob" }'
+node --experimental-sea-config sea-watcher.json
+node -e "require('fs').copyFileSync(process.execPath, 'axiom-watcher.exe')"
+npx postject axiom-watcher.exe NODE_SEA_BLOB sea-watcher.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
