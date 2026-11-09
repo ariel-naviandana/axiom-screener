@@ -1095,6 +1095,48 @@
       "Description": "Akhir blok: Proses semua baris watchlist"
     },
     {
+      "Command": "comment",
+      "Target": "--- PENANDA SELESAI ---",
+      "Value": "",
+      "Description": "Tulis file penanda supaya watcher.js tahu run ini selesai"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "var v=String(${!cmd_var1}).trim(); return /^\\d+$/.test(v) ? v : '';",
+      "Value": "runId",
+      "Description": "ID run dari watcher.js (cmd_var1). Kosong kalau macro dijalankan manual"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return String(${runId}) !== '' ? 1 : 0;",
+      "Value": "hasRunId",
+      "Description": "1 = dijalankan oleh watcher.js"
+    },
+    {
+      "Command": "if",
+      "Target": "${hasRunId} == 1",
+      "Value": "",
+      "Description": "Dijalankan oleh watcher.js?"
+    },
+    {
+      "Command": "store",
+      "Target": "done",
+      "Value": "!csvLine",
+      "Description": "Isi file penanda"
+    },
+    {
+      "Command": "csvSave",
+      "Target": "axiom_watcher_done_${runId}.csv",
+      "Value": "",
+      "Description": "Tulis file penanda selesai (dibaca lalu dihapus watcher.js)"
+    },
+    {
+      "Command": "end",
+      "Target": "",
+      "Value": "",
+      "Description": "Akhir blok: Dijalankan oleh watcher.js?"
+    },
+    {
       "Command": "echo",
       "Target": "axiom_watcher selesai (${n} coin)",
       "Value": "green",

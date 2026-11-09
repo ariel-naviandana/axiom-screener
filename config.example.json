@@ -1,26 +1,22 @@
 {
-  "uivisionHtml": "file:///C:/coding/axiom-screener-bot/uivision.html",
+  "uivisionHtml": "file:///C:/coding/axiom-screener/uivision.html",
   "timezone": "Asia/Jakarta",
-  "killWaitMs": 3000,
   "chromePath": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   "screener": {
     "macroName": "axiom_screener",
     "schedule": "0,10,20,30,40,50 * * * *",
     "runOnStart": false,
-    "profileDir": "C:\\chrome-bot\\screener",
-    "profileDirectory": ""
+    "profileDirectory": "Axiom Screener"
   },
   "watcher": {
     "macroName": "axiom_watcher",
-    "profileDir": "C:\\chrome-bot\\watcher",
     "watchlistPath": "C:\\uivision\\datasources\\axiom_watchlist.csv",
     "minIntervalMs": 300000,
     "minGapMs": 30000,
     "idleCheckMs": 60000,
-    "startTimeoutMs": 60000,
-    "pollMs": 10000,
+    "pollMs": 5000,
     "baseOverheadMs": 60000,
     "perCoinMsInitial": 50000,
-    "profileDirectory": ""
+    "profileDirectory": "Axiom Watcher"
   }
 }

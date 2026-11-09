@@ -1,14 +1,18 @@
 // watcher.js — Script 2
 // Jalankan macro axiom_watcher untuk coin di axiom_watchlist.csv
-// Interval fleksibel: minimal minIntervalMs (default 5 menit). Kalau satu run lebih lama,
-// run berikutnya mulai setelah run sebelumnya selesai (+ minGapMs).
-// Pakai profil Chrome terpisah (--user-data-dir), jadi tidak bentrok dengan screener.
+// Chrome dibuka dengan profil watcher (--profile-directory), tanpa kill Chrome.
+// Selesai-nya macro dideteksi lewat file penanda yang ditulis macro di akhir run:
+//   <folder datasources>/axiom_watcher_done_<runId>.csv   (runId dikirim lewat cmd_var1)
+// Interval fleksibel: minimal minIntervalMs. Kalau satu run lebih lama, run berikutnya
+// mulai setelah run sebelumnya selesai (+ minGapMs).
 const fs = require('fs');
+const path = require('path');
 const { loadConfig } = require('./lib/config');
-const { killChrome, isChromeRunning, launchChrome } = require('./lib/chrome');
+const { launchChrome } = require('./lib/chrome');
 
 const cfg = loadConfig();
 const W = cfg.watcher;
+const DATASOURCES = path.dirname(W.watchlistPath);
 let perCoinMs = W.perCoinMsInitial; // diperbarui dari durasi nyata
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -39,53 +43,33 @@ async function runOnce() {
 
     const estMs = W.baseOverheadMs + n * perCoinMs;
     const hardTimeout = Math.max(estMs * 2, 5 * 60 * 1000);
-    log(`>>> MENJALANKAN ${W.macroName}: ${n} coin | estimasi ${fmt(estMs)} | batas ${fmt(hardTimeout)}`);
+    const runId = String(Date.now());
+    const doneFile = path.join(DATASOURCES, `axiom_watcher_done_${runId}.csv`);
+    log(`>>> MENJALANKAN ${W.macroName} (profil "${W.profileDirectory}"): ${n} coin | estimasi ${fmt(estMs)} | batas ${fmt(hardTimeout)}`);
 
-    // 1. Matikan Chrome watcher lama saja (Chrome screener tidak disentuh)
-    const killed = await killChrome({ only: W.profileDir });
-    if (killed) log(`${killed} Chrome watcher lama dimatikan`);
-    await sleep(cfg.killWaitMs);
-
-    // 2. Buka Chrome watcher
     const start = Date.now();
-    const url = `${cfg.uivisionHtml}?macro=${W.macroName}&direct=1&closeRPA=1&closeBrowser=1&storage=xfile`;
-    const err = await launchChrome({
-        url,
-        userDataDir: W.profileDir,
-        profileDirectory: W.profileDirectory || undefined,
-        chromePath: cfg.chromePath,
-    });
+    const url = `${cfg.uivisionHtml}?macro=${encodeURIComponent(W.macroName)}&direct=1&closeRPA=1&closeBrowser=1&storage=xfile&cmd_var1=${runId}`;
+    const err = await launchChrome({ url, profileDirectory: W.profileDirectory, chromePath: cfg.chromePath });
     if (err) {
         log(`Error membuka Chrome: ${err.message}`);
         return W.idleCheckMs;
     }
 
-    // 3. Tunggu Chrome muncul
-    let started = false;
-    while (Date.now() - start < W.startTimeoutMs) {
-        if (await isChromeRunning(W.profileDir)) { started = true; break; }
-        await sleep(2000);
-    }
-    if (!started) {
-        log('Chrome watcher tidak terdeteksi berjalan');
-        return W.idleCheckMs;
-    }
-
-    // 4. Tunggu macro selesai (closeBrowser=1 menutup Chrome) atau kena batas waktu
+    // Tunggu file penanda selesai dari macro, atau kena batas waktu
     let finished = false;
     while (Date.now() - start < hardTimeout) {
         await sleep(W.pollMs);
-        if (!(await isChromeRunning(W.profileDir))) { finished = true; break; }
+        if (fs.existsSync(doneFile)) { finished = true; break; }
     }
     const elapsed = Date.now() - start;
 
-    if (!finished) {
-        log(`Run melewati batas ${fmt(hardTimeout)}, Chrome watcher dimatikan`);
-        await killChrome({ only: W.profileDir });
-    } else {
+    if (finished) {
+        try { fs.unlinkSync(doneFile); } catch { /* biarkan */ }
         const actualPerCoin = Math.max(20000, (elapsed - W.baseOverheadMs) / n);
         perCoinMs = Math.round(perCoinMs * 0.5 + actualPerCoin * 0.5);
         log(`Selesai dalam ${fmt(elapsed)} (~${Math.round(actualPerCoin / 1000)} dtk/coin)`);
+    } else {
+        log(`Run belum selesai setelah ${fmt(hardTimeout)} (macro macet atau gagal start). Lanjut ke run berikutnya`);
     }
 
     return Math.max(W.minGapMs, W.minIntervalMs - elapsed);
@@ -95,7 +79,7 @@ async function runOnce() {
     console.log('='.repeat(50));
     console.log('✅ WATCHER AKTIF');
     console.log(`   Macro     : ${W.macroName}`);
-    console.log(`   Profil    : ${W.profileDir}`);
+    console.log(`   Profil    : ${W.profileDirectory}`);
     console.log(`   Watchlist : ${W.watchlistPath}`);
     console.log(`   Interval  : min ${fmt(W.minIntervalMs)}, menyesuaikan jumlah coin`);
     console.log('='.repeat(50));
