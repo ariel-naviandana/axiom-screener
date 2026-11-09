@@ -7,14 +7,14 @@ Dua scheduler UI.Vision yang jalan bersamaan di satu laptop:
 | `screener.js` (script 1) | `axiom_screener` | profil default | cron, default tiap 10 menit |
 | `watcher.js` (script 2) | `axiom_watcher` | `--user-data-dir=C:\chrome-bot\watcher` | min 5 menit, menyesuaikan jumlah coin |
 
-Masing-masing hanya mematikan Chrome miliknya sendiri (`lib/chrome-bot.js`).
+Masing-masing hanya mematikan Chrome miliknya sendiri (`lib/chrome.js`).
 
 ## Struktur
 ```
 config.example.json  template pengaturan; salin jadi config.json (tidak di-commit)
 screener.js          script 1
 watcher.js           script 2
-lib/chrome-bot.js    launch / kill Chrome per profil
+lib/chrome.js        launch (spawn chrome.exe) / kill Chrome per profil
 lib/config.js        loader config
 uivision.html        halaman autostart UI.Vision
 macros/              axiom_screener.json, axiom_watcher.json

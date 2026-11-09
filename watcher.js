@@ -5,7 +5,7 @@
 // Pakai profil Chrome terpisah (--user-data-dir), jadi tidak bentrok dengan screener.
 const fs = require('fs');
 const { loadConfig } = require('./lib/config');
-const { killChrome, isChromeRunning, launchChrome } = require('./lib/chrome-bot');
+const { killChrome, isChromeRunning, launchChrome } = require('./lib/chrome');
 
 const cfg = loadConfig();
 const W = cfg.watcher;
@@ -49,7 +49,12 @@ async function runOnce() {
     // 2. Buka Chrome watcher
     const start = Date.now();
     const url = `${cfg.uivisionHtml}?macro=${W.macroName}&direct=1&closeRPA=1&closeBrowser=1&storage=xfile`;
-    const err = await launchChrome({ url, userDataDir: W.profileDir });
+    const err = await launchChrome({
+        url,
+        userDataDir: W.profileDir,
+        profileDirectory: W.profileDirectory || undefined,
+        chromePath: cfg.chromePath,
+    });
     if (err) {
         log(`Error membuka Chrome: ${err.message}`);
         return W.idleCheckMs;

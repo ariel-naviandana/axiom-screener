@@ -196,9 +196,9 @@
     },
     {
       "Command": "waitForElementPresent",
-      "Target": "xpath=${GRID}//div[@role='row' and @aria-rowindex='1']",
+      "Target": "xpath=${GRID}//div[@role='row' and @aria-rowindex='1']//div[@data-pulse-token-address]",
       "Value": "",
-      "Description": "Tunggu baris pertama benar-benar ter-render (bukan hanya wadahnya)"
+      "Description": "Tunggu baris pertama berisi CA (kartu coin sudah termuat penuh)"
     },
     {
       "Command": "executeScript_Sandbox",
