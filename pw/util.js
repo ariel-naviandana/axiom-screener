@@ -25,6 +25,14 @@ function num(text) {
     return m ? parseFloat(m[0].replace(/,/g, '')) : -1;
 }
 
+// Market cap: "27.6K" / "$1.2M" / "3B" -> angka. -1 kalau tidak terbaca
+function mcap(text) {
+    const m = String(text ?? '').replace(/,/g, '').match(/(\d+(?:\.\d+)?)\s*([KMBT])?/i);
+    if (!m) return -1;
+    const mult = { K: 1e3, M: 1e6, B: 1e9, T: 1e12 }[(m[2] || '').toUpperCase()] || 1;
+    return Math.round(parseFloat(m[1]) * mult);
+}
+
 // Teks bersih, "-" kalau kosong
 function txt(text) {
     const s = String(text ?? '').replace(/\s+/g, ' ').trim();
@@ -39,6 +47,7 @@ const COLUMNS = [
     'ts', 'name', 'ca', 'aTop10', 'aDev', 'aSnipers', 'aInsiders', 'aBundlers', 'aLpBurned', 'aHolders',
     'aProTraders', 'aDexPaid', 'gTop10', 'gDev', 'gHolders', 'gSnipers', 'gInsiders', 'gPhishing', 'gBundler',
     'gDexPaid', 'gNoMint', 'gNoBlacklist', 'gBurnt', 'gRug', 'status',
+    'aMcap', // kolom 26: market cap Axiom (USD), -1 kalau tidak terbaca
 ];
 
 // Tulis satu baris (append) ke file CSV
@@ -48,4 +57,4 @@ function appendRow(filePath, row) {
     fs.appendFileSync(filePath, line, 'utf8');
 }
 
-module.exports = { nowTs, fileTs, log, sleep, num, txt, appendRow, COLUMNS };
+module.exports = { nowTs, fileTs, log, sleep, num, mcap, txt, appendRow, COLUMNS };

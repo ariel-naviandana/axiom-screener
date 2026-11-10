@@ -11,6 +11,12 @@ const defaults = {
 
     axiomPulseUrl: 'https://axiom.trade/pulse?chains=sol,robinhood,arc,bnb,ink,hype,base,eth&pulseChains=sol&trackerChains=sol,robinhood,arc,bnb,ink,hype,base,eth&discoverChains=sol,robinhood,arc,bnb,ink,hype,base,eth',
     axiomMemeUrl: 'https://axiom.trade/meme/',
+    // XPath market cap di header detail Axiom (mis. "$33.7K"), dicoba berurutan.
+    // Utama: blok tepat sebelum blok berlabel "Price". Cadangan: angka besar (18px) pertama yang berisi "$".
+    axiomMcapXpath: [
+        "(//div[span[normalize-space(.)='Price']]/preceding-sibling::div[1]//span[contains(@class,'text-[18px]')])[1]",
+        "(//span[contains(@class,'text-[18px]') and contains(.,'$')])[1]",
+    ],
     gmgnTokenUrl: 'https://gmgn.ai/sol/token/',
 
     topN: 10,

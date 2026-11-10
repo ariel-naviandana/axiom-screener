@@ -1,6 +1,6 @@
 // pw/scrape.js — baca data Axiom (Pulse + detail) dan GMGN
 // Selector sama dengan macro UI.Vision axiom_screener / axiom_watcher.
-const { num, txt, sleep } = require('./util');
+const { num, mcap, txt, sleep } = require('./util');
 
 const GRID = '//*[@id="platform-layout-container"]/main/div/div[2]/div[3]/section/div/div';
 const CA_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -62,7 +62,7 @@ async function readAxiom(page, pw, ca) {
     }
     await sleep(pw.axiomSettleMs);
 
-    const raw = await page.evaluate(() => {
+    const raw = await page.evaluate((mcapXpath) => {
         const x = (q) => {
             const n = document.evaluate(q, document, null, 9, null).singleNodeValue;
             return n ? n.textContent : '';
@@ -73,13 +73,16 @@ async function readAxiom(page, pw, ca) {
             aInsiders: stat('Insiders'), aBundlers: stat('Bundlers'), aLpBurned: stat('LP Burned'),
             aHolders: stat('Holders'), aProTraders: stat('Pro Traders'), aDexPaid: stat('Dex Paid'),
             holderTab: x(`(//button//span[starts-with(normalize-space(.),'Holders (')])[1]`),
+            // coba XPath market cap satu per satu, ambil yang pertama berisi angka
+            aMcap: [].concat(mcapXpath).map(x).find((t) => /\d/.test(t)) || '',
         };
-    });
+    }, pw.axiomMcapXpath);
 
     for (const k of ['aTop10', 'aDev', 'aSnipers', 'aInsiders', 'aBundlers', 'aLpBurned', 'aHolders', 'aProTraders']) {
         res[k] = num(raw[k]);
     }
     res.aDexPaid = txt(raw.aDexPaid);
+    res.aMcap = mcap(raw.aMcap);
     const m = String(raw.holderTab || '').match(/\((\d[\d,]*)\)/);
     res.holders = m ? parseInt(m[1].replace(/,/g, ''), 10) : res.aHolders;
     res.ok = true;
@@ -152,6 +155,7 @@ const EMPTY = {
     aTop10: -1, aDev: -1, aSnipers: -1, aInsiders: -1, aBundlers: -1, aLpBurned: -1, aHolders: -1,
     aProTraders: -1, aDexPaid: '-', gTop10: -1, gDev: -1, gHolders: -1, gSnipers: -1, gInsiders: -1,
     gPhishing: -1, gBundler: -1, gDexPaid: '-', gNoMint: '-', gNoBlacklist: '-', gBurnt: -1, gRug: -1,
+    aMcap: -1,
 };
 
 // Proses satu coin: Axiom -> cek holder -> GMGN. Return baris CSV lengkap.

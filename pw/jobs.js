@@ -32,7 +32,7 @@ async function runScreener(context, pw) {
             const { row, holders } = await scrapeCoin(page, pw, coin, pw.screenerMinHolders, 'SKIP_HOLDER');
             row.ts = nowTs();
             appendRow(file, row);
-            log('SCREENER', `${i + 1}/${coins.length} ${coin.name} | holders=${holders} | ${row.status}`);
+            log('SCREENER', `${i + 1}/${coins.length} ${coin.name} | holders=${holders} | mcap=${row.aMcap} | ${row.status}`);
         }
     });
 
@@ -71,7 +71,7 @@ async function runWatcher(context, pw) {
             const { row, holders } = await scrapeCoin(page, pw, coin, pw.watcherMinHolders, 'DROP_HOLDER');
             row.ts = nowTs();
             appendRow(file, row);
-            log('WATCHER', `${i + 1}/${coins.length} ${coin.name} | holders=${holders} | ${row.status}`);
+            log('WATCHER', `${i + 1}/${coins.length} ${coin.name} | holders=${holders} | mcap=${row.aMcap} | ${row.status}`);
         }
     });
 
