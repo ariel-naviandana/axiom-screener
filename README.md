@@ -50,3 +50,20 @@ npm run watcher      (terminal 2)
 ## Status coin (n8n)
 ACTIVE (lolos screener) → WATCH (tidak lolos lagi / >15 menit) → DROPPED (holder < 500).
 WATCH/DROPPED yang lolos screener lagi kembali ACTIVE.
+
+## Versi Playwright (tanpa UI.Vision)
+Satu Chrome untuk screener + watcher (masing-masing di tab sendiri), lebih ringan daripada
+dua UI.Vision. Output CSV identik (nama file & 25 kolom), jadi workflow n8n tidak berubah.
+Pengaturan ada di bagian `playwright` pada `config.json`.
+
+```
+npm install
+npm run pw:login      sekali saja: login Axiom & GMGN di jendela yang terbuka, lalu tutup
+npm run pw            screener + watcher
+npm run pw:screener   screener saja
+npm run pw:watcher    watcher saja
+```
+- `userDataDir`: profil Chrome khusus bot (sesi login tersimpan di sini).
+- `headless: true` lebih ringan, tapi lebih mudah terdeteksi anti-bot. Coba `false` dulu.
+- `blockResources`: tidak memuat gambar/video/font untuk hemat CPU & RAM.
+- Jangan jalankan versi UI.Vision dan Playwright bersamaan (output ke folder yang sama).
