@@ -46,8 +46,9 @@ const cell = (v) => String(v ?? '').replace(/[,\r\n"]/g, ' ').trim();
 const COLUMNS = [
     'ts', 'name', 'ca', 'aTop10', 'aDev', 'aSnipers', 'aInsiders', 'aBundlers', 'aLpBurned', 'aHolders',
     'aProTraders', 'aDexPaid', 'gTop10', 'gDev', 'gHolders', 'gSnipers', 'gInsiders', 'gPhishing', 'gBundler',
-    'gDexPaid', 'gNoMint', 'gNoBlacklist', 'gBurnt', 'gRug', 'status',
-    'aMcap', // kolom 26: market cap Axiom (USD), -1 kalau tidak terbaca
+    'gDexPaid', 'gNoMint', 'gNoBlacklist', 'gBurnt', 'gRug',
+    'aMcap',  // row['24'] di n8n: market cap Axiom (USD), -1 kalau tidak terbaca
+    'status', // row['25'] di n8n
 ];
 
 // Tulis satu baris (append) ke file CSV
