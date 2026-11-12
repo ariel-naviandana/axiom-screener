@@ -67,3 +67,24 @@ npm run pw:watcher    watcher saja
 - `headless: true` lebih ringan, tapi lebih mudah terdeteksi anti-bot. Coba `false` dulu.
 - `blockResources`: tidak memuat gambar/video/font untuk hemat CPU & RAM.
 - Jangan jalankan versi UI.Vision dan Playwright bersamaan (output ke folder yang sama).
+
+## Filter (dinilai di n8n)
+Program tidak memfilter apa pun:
+- screener: selalu membaca top 10 kolom Migrated di Pulse
+- watcher: selalu membaca semua coin di `axiom_watchlist.csv`
+- setiap coin dibaca lengkap (Axiom + GMGN) dan dicatat ke CSV
+
+Status hanya `OK` / `AXIOM_GAGAL` / `GMGN_GAGAL` / `ERROR`.
+Semua syarat (holder, Top 10, Bundler, Insider, Rug, market cap) beserta angkanya ada di n8n.
+
+| row | isi |
+|---|---|
+| `row['3']` | Top 10 H. Axiom |
+| `row['6']` | Insiders Axiom |
+| `row['7']` | Bundlers Axiom |
+| `row['9']` | holder (tab "Holders (n)", cadangan kotak statistik) |
+| `row['23']` | Rug GMGN (`-1` kalau tidak ditampilkan GMGN) |
+| `row['24']` | market cap Axiom |
+| `row['25']` | status |
+
+Nilai `-1` = data tidak terbaca.

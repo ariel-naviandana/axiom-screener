@@ -26,8 +26,6 @@
     "outputDir": "C:\\uivision\\datasources",
     "watchlistPath": "C:\\uivision\\datasources\\axiom_watchlist.csv",
     "topN": 10,
-    "screenerMinHolders": 800,
-    "watcherMinHolders": 500,
     "screenerSchedule": "0,10,20,30,40,50 * * * *",
     "screenerRunOnStart": true,
     "watcherIntervalMs": 300000,

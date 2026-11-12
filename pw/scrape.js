@@ -158,23 +158,24 @@ const EMPTY = {
     aMcap: -1,
 };
 
-// Proses satu coin: Axiom -> cek holder -> GMGN. Return baris CSV lengkap.
-// failStatus: status kalau holder di bawah minimum (SKIP_HOLDER / DROP_HOLDER)
-async function scrapeCoin(page, pw, coin, minHolders, failStatus) {
-    const ax = await readAxiom(page, pw, coin.ca);
-    let gm = { ok: false };
-    let status;
-    if (!ax.ok || ax.holders < 0) {
-        status = 'AXIOM_GAGAL';
-    } else if (ax.holders < minHolders) {
-        status = failStatus;
-    } else {
-        gm = await readGmgn(page, pw, coin.ca);
-        status = gm.ok ? 'OK' : 'GMGN_GAGAL';
+// Proses satu coin: baca Axiom lalu GMGN, selalu keduanya (filter dinilai di n8n).
+// Status: OK / AXIOM_GAGAL / GMGN_GAGAL / ERROR. row['9'] (aHolders) = holder dari tab "Holders (n)",
+// cadangan dari kotak statistik.
+async function scrapeCoin(page, pw, coin) {
+    const base = { ...EMPTY, name: coin.name, ca: coin.ca };
+    try {
+        const ax = await readAxiom(page, pw, coin.ca);
+        const gm = await readGmgn(page, pw, coin.ca);
+        const axOk = ax.ok && ax.holders >= 0;
+        const status = !axOk ? 'AXIOM_GAGAL' : (gm.ok ? 'OK' : 'GMGN_GAGAL');
+        const { ok: _a, holders, ...axData } = ax;
+        const { ok: _g, ...gmData } = gm;
+        const row = { ...base, ...axData, ...gmData, status };
+        if (holders >= 0) row.aHolders = holders;
+        return { row, holders: row.aHolders };
+    } catch (e) {
+        return { row: { ...base, status: 'ERROR' }, holders: -1, error: e.message };
     }
-    const { ok: _a, holders, ...axData } = ax;
-    const { ok: _g, ...gmData } = gm;
-    return { row: { ...EMPTY, ...axData, ...gmData, name: coin.name, ca: coin.ca, status }, holders };
 }
 
 module.exports = { readPulse, readAxiom, readGmgn, scrapeCoin };

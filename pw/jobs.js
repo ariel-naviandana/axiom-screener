@@ -29,10 +29,12 @@ async function runScreener(context, pw) {
         }
         log('SCREENER', `${coins.length} coin terbaca dari kolom Migrated`);
         for (const [i, coin] of coins.entries()) {
-            const { row, holders } = await scrapeCoin(page, pw, coin, pw.screenerMinHolders, 'SKIP_HOLDER');
+            const { row, holders, error } = await scrapeCoin(page, pw, coin);
             row.ts = nowTs();
             appendRow(file, row);
-            log('SCREENER', `${i + 1}/${coins.length} ${coin.name} | holders=${holders} | mcap=${row.aMcap} | ${row.status}`);
+            log('SCREENER', `${i + 1}/${coins.length} ${coin.name} | holders=${holders} | top10=${row.aTop10} `
+                + `bundler=${row.aBundlers} insider=${row.aInsiders} rug=${row.gRug} | mcap=${row.aMcap} | ${row.status}`
+                + (error ? ` (${error})` : ''));
         }
     });
 
@@ -68,10 +70,12 @@ async function runWatcher(context, pw) {
 
     await withPage(context, async (page) => {
         for (const [i, coin] of coins.entries()) {
-            const { row, holders } = await scrapeCoin(page, pw, coin, pw.watcherMinHolders, 'DROP_HOLDER');
+            const { row, holders, error } = await scrapeCoin(page, pw, coin);
             row.ts = nowTs();
             appendRow(file, row);
-            log('WATCHER', `${i + 1}/${coins.length} ${coin.name} | holders=${holders} | mcap=${row.aMcap} | ${row.status}`);
+            log('WATCHER', `${i + 1}/${coins.length} ${coin.name} | holders=${holders} | top10=${row.aTop10} `
+                + `bundler=${row.aBundlers} insider=${row.aInsiders} rug=${row.gRug} | mcap=${row.aMcap} | ${row.status}`
+                + (error ? ` (${error})` : ''));
         }
     });
 

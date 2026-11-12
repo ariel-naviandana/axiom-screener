@@ -21,8 +21,7 @@ const defaults = {
 
     topN: 10,
     scrollStep: 600,
-    screenerMinHolders: 800,
-    watcherMinHolders: 500,
+    // Tidak ada filter di program: semua coin dibaca lengkap (Axiom + GMGN), filter dinilai di n8n.
     screenerSchedule: '0,5,10,15,20,25,30,35,40,45,50,55 * * * *',
     screenerRunOnStart: true,
 
@@ -41,7 +40,8 @@ const defaults = {
 
 function loadPwConfig() {
     const cfg = loadConfig();
-    const pw = { ...defaults, ...(cfg.playwright || {}) };
+    const user = cfg.playwright || {};
+    const pw = { ...defaults, ...user };
     if (cfg.chromePath && !(cfg.playwright || {}).chromePath) pw.chromePath = cfg.chromePath;
     return pw;
 }
