@@ -1,7 +1,7 @@
-// pw/login.js — buka Chrome profil bot untuk login manual ke Axiom & GMGN (sekali saja)
+// src/login.js — buka Chrome profil bot untuk login manual ke Axiom & GMGN (sekali saja)
 // Login di jendela yang terbuka, lalu tutup jendelanya. Sesi tersimpan di userDataDir.
-const { loadPwConfig } = require('./config');
-const { openBrowser } = require('./browser');
+const { loadPwConfig } = require('./core/config');
+const { openBrowser } = require('./core/browser');
 
 (async () => {
     const pw = { ...loadPwConfig(), headless: false, blockResources: false };

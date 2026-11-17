@@ -1,4 +1,4 @@
-// pw/browser.js — satu Chrome (persistent context) untuk screener & watcher
+// src/core/browser.js — satu Chrome (persistent context) untuk screener & watcher
 // Pakai Chrome asli (executablePath) + folder profil sendiri supaya sesi login Axiom/GMGN tersimpan.
 const { chromium } = require('playwright-core');
 

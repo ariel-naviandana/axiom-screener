@@ -1,4 +1,4 @@
-// pw/guard.js — pengaman supaya siklus tidak macet selamanya
+// src/core/guard.js — pengaman supaya siklus tidak macet selamanya
 // Perintah Playwright seperti page.evaluate() dan page.close() tidak punya timeout: kalau tab hang
 // (renderer freeze / crash), perintah itu menunggu tanpa batas dan siklus tidak pernah selesai.
 //   withTimeout : batasi lama sebuah proses, lempar TimeoutError kalau lewat

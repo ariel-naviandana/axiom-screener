@@ -1,18 +1,14 @@
-// pw/jobs.js — job screener (top N Pulse) dan watcher (coin di watchlist)
+// src/jobs/cycle.js — bagian bersama screener & watcher: tab, batas waktu, tulis CSV
 // Pengaman macet (guard.js):
 //   - satu coin dibatasi coinTimeoutMs -> status TIMEOUT, tab diganti baru, lanjut coin berikutnya
 //   - tab crash -> diganti tab baru di coin berikutnya
 //   - satu siklus dibatasi (screenerTimeoutMs / watcher: jumlah coin x coinTimeoutMs + extra)
 //     -> siklus dihentikan paksa, tab ditutup, jadwal berikutnya bisa jalan
 //   - tab yang tidak bisa ditutup (hang) ditinggal, tidak menahan siklus
-const fs = require('fs');
-const path = require('path');
-const { readPulse, scrapeCoin, EMPTY } = require('./scrape');
-const { nowTs, fileTs, log, appendRow } = require('./util');
-const { withTimeout, closePage, TimeoutError, Progress } = require('./guard');
-
-const CA_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-const PULSE_TIMEOUT_MS = 5 * 60 * 1000;
+const { scrapeCoin, EMPTY } = require('../scrape/coin');
+const { nowTs, log } = require('../core/util');
+const { appendRow } = require('../core/csv');
+const { withTimeout, closePage, TimeoutError, Progress } = require('../core/guard');
 
 // progres siklus yang sedang jalan (dipakai di log "dilewati")
 const progress = { SCREENER: new Progress(), WATCHER: new Progress() };
@@ -98,75 +94,10 @@ async function scrapeList(tag, ctl, pw, coins, file) {
         appendRow(file, row);
         log(tag, `${i + 1}/${coins.length} ${coin.name} | holders=${holders} | top10=${row.aTop10} `
             + `bundler=${row.aBundlers} insider=${row.aInsiders} rug=${row.gRug} | mcap=${row.aMcap} | ${row.status}`
+            + (pw.migCandle ? ` | mig ${row.migAt} vol=${row.migVol} O=${row.migO} H=${row.migH} L=${row.migL} C=${row.migC}`
+                + (row.migNote ? ` [${row.migNote}]` : '') : '')
             + (error ? ` (${error})` : ''));
     }
 }
 
-// ---------- Screener: sama dengan macro axiom_screener ----------
-async function runScreener(context, pw) {
-    const file = path.join(pw.outputDir, `axiom_screener_${fileTs()}.csv`);
-    const t0 = Date.now();
-    log('SCREENER', 'Mulai');
-
-    const done = await guardedCycle('SCREENER', context, pw.screenerTimeoutMs, async (ctl) => {
-        ctl.prog.set({ step: 'Pulse' });
-        let coins;
-        try {
-            const page = await ctl.tab.get();
-            coins = await withTimeout(readPulse(page, pw, 'SCREENER'), PULSE_TIMEOUT_MS, 'Baca Pulse');
-        } catch (e) {
-            ctl.tab.broken = true;
-            log('SCREENER', `Pulse gagal dibaca (${e.message}), siklus dilewati`);
-            return false;
-        }
-        if (ctl.aborted) return false;
-        if (!coins) {
-            log('SCREENER', 'Pulse tidak terbaca setelah 3 percobaan, siklus dilewati');
-            return false;
-        }
-        log('SCREENER', `${coins.length} coin terbaca dari kolom Migrated`);
-        await scrapeList('SCREENER', ctl, pw, coins, file);
-        return !ctl.aborted;
-    });
-
-    if (done) log('SCREENER', `Selesai dalam ${Math.round((Date.now() - t0) / 1000)} dtk -> ${path.basename(file)}`);
-}
-
-// ---------- Watcher: sama dengan macro axiom_watcher ----------
-function readWatchlist(file) {
-    try {
-        return fs.readFileSync(file, 'utf8').split(/\r?\n/).slice(1)
-            .map((l) => l.split(','))
-            .map(([ca, name]) => ({ ca: String(ca || '').trim(), name: String(name || '').trim() }))
-            .filter((c) => CA_RE.test(c.ca));
-    } catch {
-        return null;
-    }
-}
-
-async function runWatcher(context, pw) {
-    const coins = readWatchlist(pw.watchlistPath);
-    if (coins === null) {
-        log('WATCHER', 'Watchlist belum ada / tidak terbaca');
-        return 0;
-    }
-    if (coins.length === 0) {
-        log('WATCHER', 'Watchlist kosong');
-        return 0;
-    }
-
-    const file = path.join(pw.outputDir, `axiom_watch_${fileTs()}.csv`);
-    const t0 = Date.now();
-    log('WATCHER', `Mulai: ${coins.length} coin`);
-
-    const maxMs = coins.length * pw.coinTimeoutMs + pw.watcherTimeoutExtraMs;
-    const done = await guardedCycle('WATCHER', context, maxMs, async (ctl) => {
-        await scrapeList('WATCHER', ctl, pw, coins, file);
-        return !ctl.aborted;
-    });
-
-    if (done) log('WATCHER', `Selesai dalam ${Math.round((Date.now() - t0) / 1000)} dtk -> ${path.basename(file)}`);
-    return coins.length;
-}
-
-module.exports = { runScreener, runWatcher, progress };
+module.exports = { progress, guardedCycle, scrapeList };

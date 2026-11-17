@@ -1,5 +1,23 @@
-// pw/config.js — pengaturan versi Playwright, diambil dari bagian "playwright" di config.json
-const { loadConfig } = require('../lib/config');
+// src/core/config.js — baca config.json (bagian "playwright") dari folder exe atau folder project
+// config.json tidak di-commit; template: config.example.json. Key di luar "playwright" diabaikan,
+// kecuali chromePath di level atas (kompatibel dengan config lama).
+const fs = require('fs');
+const path = require('path');
+
+const isExe = !['node.exe', 'node'].includes(path.basename(process.execPath).toLowerCase());
+
+// Folder project = folder pertama (naik dari file ini) yang berisi package.json
+function projectDir() {
+    let dir = __dirname;
+    for (let i = 0; i < 5; i++) {
+        if (fs.existsSync(path.join(dir, 'package.json'))) return dir;
+        const up = path.dirname(dir);
+        if (up === dir) break;
+        dir = up;
+    }
+    return path.join(__dirname, '..', '..');
+}
+const BASE_DIR = isExe ? path.dirname(process.execPath) : projectDir();
 
 const defaults = {
     chromePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
@@ -37,6 +55,15 @@ const defaults = {
     axiomSettleMs: 1500,  // jeda setelah detail Axiom termuat
     gmgnSettleMs: 5000,   // jeda setelah statistik GMGN muncul (macro: 10 dtk)
 
+    // Candle migrasi: data candle ditangkap dari chart Axiom (token-chart), waktu migrasi dari DexScreener
+    // (waktu pair AMM dibuat). Hasil: kolom migAt, migVol, migO/H/L/C (market cap).
+    migCandle: true,
+    migIntervalMin: 5,       // interval candle migrasi (menit), samakan dengan chart yang kamu lihat
+    migChartWaitMs: 10000,   // tunggu data chart tertangkap setelah detail terbuka
+    migApiTimeoutMs: 10000,  // batas waktu request DexScreener
+    migApiRetries: 1,        // coba ulang request DexScreener kalau gagal
+    migBondingDexes: ['pumpfun', 'launchlab', 'meteoradbc', 'moonshot', 'boop', 'believe'], // pair bonding curve, bukan migrasi
+
     // Pengaman macet (tab hang / crash). Normal satu coin ~40-55 dtk.
     coinTimeoutMs: 3 * 60 * 1000,      // batas satu coin (Axiom + GMGN); lewat = status TIMEOUT, tab diganti baru
     screenerTimeoutMs: 20 * 60 * 1000, // batas satu siklus screener; lewat = dihentikan paksa, jadwal berikutnya jalan
@@ -45,11 +72,18 @@ const defaults = {
 };
 
 function loadPwConfig() {
-    const cfg = loadConfig();
+    const file = path.join(BASE_DIR, 'config.json');
+    let cfg = {};
+    try {
+        cfg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+        console.log(`Config dibaca dari: ${file}`);
+    } catch {
+        console.log(`config.json tidak ditemukan/rusak di ${file}, pakai nilai bawaan`);
+    }
     const user = cfg.playwright || {};
     const pw = { ...defaults, ...user };
-    if (cfg.chromePath && !(cfg.playwright || {}).chromePath) pw.chromePath = cfg.chromePath;
+    if (cfg.chromePath && !user.chromePath) pw.chromePath = cfg.chromePath;
     return pw;
 }
 
-module.exports = { loadPwConfig };
+module.exports = { loadPwConfig, BASE_DIR };

@@ -1,15 +1,13 @@
 {
   "name": "axiom-screener-bot",
   "version": "1.0.0",
-  "description": "Axiom Screener & Watcher: scheduler UI.Vision dan versi Playwright",
-  "main": "screener.js",
+  "description": "Axiom Screener & Watcher (Playwright)",
+  "main": "src/index.js",
   "scripts": {
-    "screener": "node screener.js",
-    "watcher": "node watcher.js",
-    "pw": "node pw/index.js",
-    "pw:screener": "node pw/index.js screener",
-    "pw:watcher": "node pw/index.js watcher",
-    "pw:login": "node pw/login.js"
+    "start": "node src/index.js",
+    "screener": "node src/index.js screener",
+    "watcher": "node src/index.js watcher",
+    "login": "node src/index.js login"
   },
   "license": "ISC",
   "dependencies": {

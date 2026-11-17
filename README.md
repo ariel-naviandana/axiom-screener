@@ -1,86 +1,71 @@
 # axiom-screener
 
-Dua scheduler UI.Vision yang jalan bersamaan di satu laptop, memakai Chrome default
-dengan **profil berbeda** (`--profile-directory`):
+Bot Axiom berbasis Playwright: satu Chrome untuk dua tugas, masing-masing di tab sendiri.
+- **Screener**: cron (`screenerSchedule`), membaca top N coin kolom Migrated di Axiom Pulse.
+- **Watcher**: loop, membaca semua coin di `axiom_watchlist.csv` (dibuat workflow n8n).
 
-| Script | Macro | Profil Chrome | Jadwal |
-|---|---|---|---|
-| `screener.js` (script 1) | `axiom_screener` | `Axiom Screener` | cron, default tiap 10 menit |
-| `watcher.js` (script 2) | `axiom_watcher` | `Axiom Watcher` | min 5 menit, menyesuaikan jumlah coin |
-
-Bot tidak mematikan Chrome sama sekali. Macro menutup jendelanya sendiri (`closeBrowser=1`),
-jadi profil lain dan Chrome pribadi tidak terganggu. Watcher tahu run selesai dari file penanda
-`axiom_watcher_done_<runId>.csv` yang ditulis macro di akhir run (runId dikirim lewat `cmd_var1`).
-
-## Struktur
-```
-config.example.json  template pengaturan; salin jadi config.json (tidak di-commit)
-screener.js          script 1
-watcher.js           script 2
-lib/chrome.js        buka chrome.exe (spawn) dengan --profile-directory
-lib/config.js        loader config
-uivision.html        halaman autostart UI.Vision
-macros/              axiom_screener.json, axiom_watcher.json
-datasources/         template axiom_watchlist.csv
-build-exe.txt        langkah build 2 exe
-```
+Setiap coin dibaca lengkap (statistik Axiom + GMGN + candle migrasi) lalu dicatat ke CSV;
+semua filter dan notifikasi Telegram ada di n8n.
 
 ## Setup
-1. `copy config.example.json config.json`, lalu sesuaikan `uivisionHtml` (lokasi folder clone)
-   dan `watcher.watchlistPath` (folder `datasources` UI.Vision yang ter-sync Google Drive).
+1. `copy config.example.json config.json`, lalu sesuaikan (lihat Pengaturan).
 2. `npm install`
-3. Siapkan 2 profil Chrome (folder profil dibuat otomatis kalau belum ada):
-   ```
-   "C:\Program Files\Google\Chrome\Application\chrome.exe" --profile-directory="Axiom Screener"
-   "C:\Program Files\Google\Chrome\Application\chrome.exe" --profile-directory="Axiom Watcher"
-   ```
-   Di masing-masing: install UI.Vision + XModules, aktifkan "Allow access to file URLs",
-   storage hard drive dengan root folder UI.Vision yang sama, login Axiom & GMGN.
-   Mau pakai profil yang sudah ada? Isi `profileDirectory` dengan nama foldernya
-   (lihat `chrome://version` → Profile Path, mis. `Profile 2`).
-4. Salin `macros/*.json` ke folder `macros` UI.Vision dan `datasources/axiom_watchlist.csv`
-   ke folder `datasources` UI.Vision.
+3. `npm run login` sekali saja: login Axiom & GMGN di jendela yang terbuka, lalu tutup jendelanya.
 
 ## Menjalankan
 ```
-npm run screener     (terminal 1)
-npm run watcher      (terminal 2)
+npm start             screener + watcher
+npm run screener      screener saja
+npm run watcher       watcher saja
+npm run login         login Axiom & GMGN (bot harus sedang tidak jalan)
 ```
 
-## Status coin (n8n)
-ACTIVE (lolos screener) → WATCH (tidak lolos lagi / >15 menit) → DROPPED (holder < 500).
-WATCH/DROPPED yang lolos screener lagi kembali ACTIVE.
-
-## Versi Playwright (tanpa UI.Vision)
-Satu Chrome untuk screener + watcher (masing-masing di tab sendiri), lebih ringan daripada
-dua UI.Vision. Output CSV identik (nama file & 25 kolom), jadi workflow n8n tidak berubah.
-Pengaturan ada di bagian `playwright` pada `config.json`.
-
+## Struktur
 ```
-npm install
-npm run pw:login      sekali saja: login Axiom & GMGN di jendela yang terbuka, lalu tutup
-npm run pw            screener + watcher
-npm run pw:screener   screener saja
-npm run pw:watcher    watcher saja
+src/
+├─ index.js            titik masuk (mode: kosong | screener | watcher | login)
+├─ runner.js           jadwal cron screener, loop watcher, shutdown
+├─ login.js            buka Chrome profil bot untuk login manual
+├─ core/
+│  ├─ config.js        baca config.json (bagian "playwright") + nilai bawaan
+│  ├─ browser.js       buka Chrome (persistent context, profil bot)
+│  ├─ util.js          waktu WIB, log, parsing angka
+│  ├─ csv.js           urutan kolom & tulis baris CSV
+│  └─ guard.js         batas waktu & pengaman macet
+├─ scrape/
+│  ├─ pulse.js         top N kolom Migrated
+│  ├─ axiom.js         statistik detail Axiom
+│  ├─ gmgn.js          statistik GMGN
+│  ├─ migcandle.js     candle migrasi (data chart Axiom + waktu migrasi DexScreener)
+│  └─ coin.js          satu coin: Axiom + GMGN + status
+└─ jobs/
+   ├─ cycle.js         tab, batas waktu siklus/coin, tulis CSV (bersama)
+   ├─ screener.js
+   └─ watcher.js
+config.example.json    template config.json (config.json tidak di-commit)
+datasources/           template axiom_watchlist.csv
+n8n/                   workflow n8n (tidak di-commit)
 ```
+
+## Pengaturan (`config.json` -> `playwright`)
+Semua key opsional, nilai bawaan ada di `src/core/config.js`.
 - `userDataDir`: profil Chrome khusus bot (sesi login tersimpan di sini).
 - `headless: true` lebih ringan, tapi lebih mudah terdeteksi anti-bot. Coba `false` dulu.
 - `blockResources`: tidak memuat gambar/video/font untuk hemat CPU & RAM.
-- Jangan jalankan versi UI.Vision dan Playwright bersamaan (output ke folder yang sama).
-- Pengaman macet (tab hang / crash), bisa diubah di `config.json` -> `playwright`:
+- `outputDir`, `watchlistPath`: folder CSV hasil dan lokasi watchlist.
+- `topN`, `screenerSchedule`, `screenerRunOnStart`, `watcherIntervalMs`: jadwal & jumlah coin.
+- Pengaman macet (tab hang / crash):
   - `coinTimeoutMs` (bawaan 3 mnt): satu coin lebih lama dari ini -> status `TIMEOUT`, tab diganti baru, lanjut coin berikutnya.
   - `screenerTimeoutMs` (bawaan 20 mnt): satu siklus screener lebih lama dari ini -> dihentikan paksa, jadwal berikutnya jalan lagi.
   - watcher: batas siklus = jumlah coin x `coinTimeoutMs` + `watcherTimeoutExtraMs` (bawaan 3 mnt).
-  - Log "jadwal ini dilewati" sekarang menampilkan progres siklus yang sedang jalan (lama, coin ke berapa, langkah Axiom/GMGN).
+  - Log "jadwal ini dilewati" menampilkan progres siklus yang sedang jalan (lama, coin ke berapa, langkah Axiom/GMGN).
+- Candle migrasi (`migCandle`, bawaan aktif): saat detail Axiom dibuka, data candle chart ditangkap dari request
+  `token-chart` Axiom; waktu migrasi dari DexScreener (waktu pair AMM dibuat, pair bonding curve di `migBondingDexes`
+  dilewati). `migIntervalMin` (bawaan 5) = interval candle migrasi; candle 1 menit digabung kalau perlu.
 
-## Filter (dinilai di n8n)
-Program tidak memfilter apa pun:
-- screener: selalu membaca top 10 kolom Migrated di Pulse
-- watcher: selalu membaca semua coin di `axiom_watchlist.csv`
-- setiap coin dibaca lengkap (Axiom + GMGN) dan dicatat ke CSV
-
-Status hanya `OK` / `AXIOM_GAGAL` / `GMGN_GAGAL` / `ERROR` / `TIMEOUT` (coin macet, dihentikan).
-Semua syarat (holder, Top 10, Bundler, Insider, Rug, market cap) beserta angkanya ada di n8n.
+## Output CSV
+Nama file `axiom_screener_<waktu>.csv` / `axiom_watch_<waktu>.csv`, tanpa header, tanpa quoting.
+Status: `OK` / `AXIOM_GAGAL` / `GMGN_GAGAL` / `ERROR` / `TIMEOUT` (coin macet, dihentikan). Nilai `-1` / `-` = tidak terbaca.
 
 | row | isi |
 |---|---|
@@ -91,5 +76,12 @@ Semua syarat (holder, Top 10, Bundler, Insider, Rug, market cap) beserta angkany
 | `row['23']` | Rug GMGN (`-1` kalau tidak ditampilkan GMGN) |
 | `row['24']` | market cap Axiom |
 | `row['25']` | status |
+| `row['26']` | waktu migrasi (WIB) |
+| `row['27']` | volume candle migrasi (USD) |
+| `row['28']`-`row['31']` | open / high / low / close candle migrasi (market cap USD) |
 
-Nilai `-1` = data tidak terbaca.
+Urutan lengkap kolom ada di `src/core/csv.js`.
+
+## Status coin (n8n)
+ACTIVE (lolos screener) → WATCH (tidak lolos lagi / >15 menit) → DROPPED (holder < 500).
+WATCH/DROPPED yang lolos screener lagi kembali ACTIVE.
