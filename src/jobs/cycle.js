@@ -93,8 +93,11 @@ async function scrapeList(tag, ctl, pw, coins, file) {
         row.ts = nowTs();
         appendRow(file, row);
         log(tag, `${i + 1}/${coins.length} ${coin.name} | holders=${holders} | top10=${row.aTop10} `
-            + `bundler=${row.aBundlers} insider=${row.aInsiders} rug=${row.gRug} | mcap=${row.aMcap} | ${row.status}`
-            + (pw.migCandle ? ` | mig ${row.migAt} vol=${row.migVol} O=${row.migO} H=${row.migH} L=${row.migL} C=${row.migC}`
+            + `bundler=${row.aBundlers} insider=${row.aInsiders} | mcap=${row.aMcap} | ${row.status}`
+            + (row.xHandle !== '-' || row.kol >= 0 ? ` | X ${row.xHandle} (${row.xType}) KOL=${row.kol}` : '')
+            + ` | fees=${row.aFees}`
+            + (row.status === 'SKIP' ? ` | SKIP: ${row.skip}` : '')
+            + (pw.migCandle ? ` | mig ${row.migAt} vol=${row.migVol} lastVol=${row.lastVol}`
                 + (row.migNote ? ` [${row.migNote}]` : '') : '')
             + (error ? ` (${error})` : ''));
     }

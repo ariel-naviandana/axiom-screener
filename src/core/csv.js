@@ -7,15 +7,44 @@ const cell = (v) => String(v ?? '').replace(/[,\r\n"]/g, ' ').trim();
 
 // Urutan kolom CSV (index = row['n'] di n8n)
 const COLUMNS = [
-    'ts', 'name', 'ca', 'aTop10', 'aDev', 'aSnipers', 'aInsiders', 'aBundlers', 'aLpBurned', 'aHolders',
-    'aProTraders', 'aDexPaid', 'gTop10', 'gDev', 'gHolders', 'gSnipers', 'gInsiders', 'gPhishing', 'gBundler',
-    'gDexPaid', 'gNoMint', 'gNoBlacklist', 'gBurnt', 'gRug',
-    'aMcap',  // row['24'] di n8n: market cap Axiom (USD), -1 kalau tidak terbaca
-    'status', // row['25'] di n8n: OK / AXIOM_GAGAL / GMGN_GAGAL / ERROR / TIMEOUT
-    // candle migrasi (config migCandle), '-' / -1 kalau tidak terbaca
-    'migAt',  // row['26'] waktu migrasi (WIB)
-    'migVol', // row['27'] volume candle migrasi (USD)
-    'migO', 'migH', 'migL', 'migC', // row['28'-'31'] open/high/low/close candle migrasi (market cap USD)
+    'ts',          // row['0']  waktu dicatat (WIB)
+    'name',        // row['1']
+    'ca',          // row['2']
+    // statistik Axiom (detail)
+    'aTop10',      // row['3']  Top 10 H. %
+    'aDev',        // row['4']  Dev H. %
+    'aSnipers',    // row['5']  Snipers H. %
+    'aInsiders',   // row['6']  Insiders %
+    'aBundlers',   // row['7']  Bundlers %
+    'aLpBurned',   // row['8']  LP Burned %
+    'aHolders',    // row['9']  holder (tab "Holders (n)", cadangan kotak statistik / baris Pulse)
+    'aProTraders', // row['10'] Pro Traders
+    'aDexPaid',    // row['11'] Dex Paid
+    // statistik GMGN
+    'gTop10',      // row['12']
+    'gDev',        // row['13']
+    'gHolders',    // row['14']
+    'gSnipers',    // row['15']
+    'gInsiders',   // row['16']
+    'gPhishing',   // row['17']
+    'gBundler',    // row['18']
+    'gDexPaid',    // row['19']
+    'gNoMint',     // row['20'] OK / BAD:...
+    'gNoBlacklist',// row['21'] OK / BAD:...
+    'gBurnt',      // row['22']
+    'aMcap',       // row['23'] market cap Axiom (USD)
+    // chart Axiom (config migCandle)
+    'migAt',       // row['24'] waktu migrasi (WIB)
+    'migVol',      // row['25'] volume candle migrasi (USD)
+    'lastVol',     // row['26'] volume candle terbaru (USD)
+    // baris Pulse (screener saja; watcher '-' / -1)
+    'xHandle',     // row['27'] akun X/Twitter (@...)
+    'xType',       // row['28'] kartu X: post / profile / -
+    'xText',       // row['29'] isi tweet (post) atau bio akun (profile)
+    'kol',         // row['30'] jumlah KOL
+    'aFees',       // row['31'] Global Fees Paid (SOL), detail Axiom
+    'skip',        // row['32'] alasan SKIP, '-' kalau tidak di-skip
+    'status',      // row['33'] OK / AXIOM_GAGAL / GMGN_GAGAL / ERROR / TIMEOUT / SKIP
 ];
 
 // Tulis satu baris (append) ke file CSV

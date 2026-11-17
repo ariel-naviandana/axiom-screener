@@ -11,7 +11,6 @@ const GMGN_FIELDS = [
     ['gBundler', 'token-detail-bundler-badge', 'item-value'],
     ['gDexPaid', 'token-detail-info-dex_pay', 'info-item-value'],
     ['gBurnt', 'token-detail-info-burnt2', 'info-item-value'],
-    ['gRug', 'token-detail-info-rug_probabilty', 'info-item-value'],
 ];
 
 function flag(icon, text) {

@@ -7,7 +7,7 @@
 // H maks, L min, C terakhir, volume dijumlah). O/H/L/C dicatat sebagai market cap (sama dengan chart).
 const { sleep, nowTs } = require('../core/util');
 
-const EMPTY_MIG = { migAt: '-', migVol: -1, migO: -1, migH: -1, migL: -1, migC: -1 };
+const EMPTY_MIG = { migAt: '-', migVol: -1, lastVol: -1 };
 const migCache = new Map(); // CA -> waktu migrasi (ms), tidak berubah, jadi cukup diambil sekali
 
 // Pasang penangkap respons token-chart SEBELUM halaman detail dibuka. Return fungsi untuk menunggu hasilnya.
@@ -68,9 +68,24 @@ function intervalMs(interval, bars) {
     return bars.length > 1 ? bars[1][0] - bars[0][0] : 60000;
 }
 
-// Hitung candle migrasi dari bars + waktu migrasi
+// Volume candle terbaru (interval migIntervalMin, candle yang sedang berjalan ikut dihitung)
+function lastVolume(pw, chart) {
+    const step = intervalMs(chart.interval, chart.bars);
+    const want = Math.max(step, (Number(pw.migIntervalMin) || 0) * 60000);
+    const lastTs = chart.bars[chart.bars.length - 1][0];
+    const start = Math.floor(lastTs / want) * want;
+    const v = chart.bars.filter((b) => b[0] >= start).reduce((t, b) => t + Number(b[5]), 0);
+    return Math.round(v * 100) / 100;
+}
+
+// Hitung candle migrasi dari bars + waktu migrasi, plus volume candle terbaru
 async function readMigCandle(pw, ca, chart) {
     if (!chart) return { ...EMPTY_MIG, migNote: 'data chart tidak tertangkap' };
+    const withLast = (r) => ({ ...r, lastVol: lastVolume(pw, chart) });
+    return withLast(await migCandle(pw, ca, chart));
+}
+
+async function migCandle(pw, ca, chart) {
     let at;
     try {
         at = await migrationTime(pw, ca);
@@ -92,18 +107,10 @@ async function readMigCandle(pw, ca, chart) {
     if (first > start) {
         return { ...res, migNote: `data chart mulai ${nowTs(new Date(first))}, candle ${want / 60000}m migrasi tidak lengkap` };
     }
-    // market cap tiap bar = harga x supply bar itu (supply di data chart bisa berubah antar bar)
-    const sup = (b) => (Number(b[6]) > 0 ? Number(b[6]) : 1e9);
-    const mcs = inRange.map((b) => ({ o: b[1] * sup(b), h: b[2] * sup(b), l: b[3] * sup(b), c: b[4] * sup(b), v: Number(b[5]) }));
-    const o = mcs[0].o;
-    const h = Math.max(...mcs.map((x) => x.h));
-    const l = Math.min(...mcs.map((x) => x.l));
-    const c = mcs[mcs.length - 1].c;
-    const v = mcs.reduce((t, x) => t + x.v, 0);
+    const v = inRange.reduce((t, b) => t + Number(b[5]), 0);
     return {
         ...res,
         migVol: Math.round(v * 100) / 100,
-        migO: Math.round(o), migH: Math.round(h), migL: Math.round(l), migC: Math.round(c),
         migNote: `candle ${want / 60000}m ${nowTs(new Date(start))} (${inRange.length} bar ${chart.interval || `${step / 60000}m`})`,
     };
 }

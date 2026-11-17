@@ -1,4 +1,5 @@
-// src/scrape/axiom.js — detail coin Axiom: 9 statistik + jumlah holder (+ candle migrasi, lihat migcandle.js)
+// src/scrape/axiom.js — detail coin Axiom: 9 statistik, jumlah holder, Global Fees Paid (SOL)
+// (+ candle migrasi & volume candle terbaru, lihat migcandle.js)
 const { num, mcap, txt, sleep } = require('../core/util');
 const { captureChart, readMigCandle } = require('./migcandle');
 
@@ -16,7 +17,7 @@ async function readAxiom(page, pw, ca) {
     }
     await sleep(pw.axiomSettleMs);
 
-    const raw = await page.evaluate((mcapXpath) => {
+    const raw = await page.evaluate(({ mcapXpath, feesXpath }) => {
         const x = (q) => {
             const n = document.evaluate(q, document, null, 9, null).singleNodeValue;
             return n ? n.textContent : '';
@@ -29,19 +30,27 @@ async function readAxiom(page, pw, ca) {
             holderTab: x(`(//button//span[starts-with(normalize-space(.),'Holders (')])[1]`),
             // coba XPath market cap satu per satu, ambil yang pertama berisi angka
             aMcap: [].concat(mcapXpath).map(x).find((t) => /\d/.test(t)) || '',
+            // Global Fees Paid (header, sebaris dengan market cap): teks induk label tanpa labelnya
+            aFees: (() => {
+                const lab = [...document.querySelectorAll('span, div')]
+                    .find((e) => e.childElementCount === 0 && e.textContent.trim() === 'Global Fees Paid');
+                const t = lab && lab.parentElement ? lab.parentElement.textContent.replace('Global Fees Paid', '') : '';
+                return /\d/.test(t) ? t : (feesXpath ? x(feesXpath) : '');
+            })(),
         };
-    }, pw.axiomMcapXpath);
+    }, { mcapXpath: pw.axiomMcapXpath, feesXpath: pw.axiomFeesXpath });
 
     for (const k of ['aTop10', 'aDev', 'aSnipers', 'aInsiders', 'aBundlers', 'aLpBurned', 'aHolders', 'aProTraders']) {
         res[k] = num(raw[k]);
     }
     res.aDexPaid = txt(raw.aDexPaid);
     res.aMcap = mcap(raw.aMcap);
+    res.aFees = num(raw.aFees);
     const m = String(raw.holderTab || '').match(/\((\d[\d,]*)\)/);
     res.holders = m ? parseInt(m[1].replace(/,/g, ''), 10) : res.aHolders;
     res.ok = true;
 
-    // candle migrasi (tidak memengaruhi status)
+    // candle migrasi & volume candle terbaru
     if (waitChart) {
         try {
             Object.assign(res, await readMigCandle(pw, ca, await waitChart(pw.migChartWaitMs)));
