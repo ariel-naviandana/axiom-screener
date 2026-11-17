@@ -67,6 +67,11 @@ npm run pw:watcher    watcher saja
 - `headless: true` lebih ringan, tapi lebih mudah terdeteksi anti-bot. Coba `false` dulu.
 - `blockResources`: tidak memuat gambar/video/font untuk hemat CPU & RAM.
 - Jangan jalankan versi UI.Vision dan Playwright bersamaan (output ke folder yang sama).
+- Pengaman macet (tab hang / crash), bisa diubah di `config.json` -> `playwright`:
+  - `coinTimeoutMs` (bawaan 3 mnt): satu coin lebih lama dari ini -> status `TIMEOUT`, tab diganti baru, lanjut coin berikutnya.
+  - `screenerTimeoutMs` (bawaan 20 mnt): satu siklus screener lebih lama dari ini -> dihentikan paksa, jadwal berikutnya jalan lagi.
+  - watcher: batas siklus = jumlah coin x `coinTimeoutMs` + `watcherTimeoutExtraMs` (bawaan 3 mnt).
+  - Log "jadwal ini dilewati" sekarang menampilkan progres siklus yang sedang jalan (lama, coin ke berapa, langkah Axiom/GMGN).
 
 ## Filter (dinilai di n8n)
 Program tidak memfilter apa pun:
@@ -74,7 +79,7 @@ Program tidak memfilter apa pun:
 - watcher: selalu membaca semua coin di `axiom_watchlist.csv`
 - setiap coin dibaca lengkap (Axiom + GMGN) dan dicatat ke CSV
 
-Status hanya `OK` / `AXIOM_GAGAL` / `GMGN_GAGAL` / `ERROR`.
+Status hanya `OK` / `AXIOM_GAGAL` / `GMGN_GAGAL` / `ERROR` / `TIMEOUT` (coin macet, dihentikan).
 Semua syarat (holder, Top 10, Bundler, Insider, Rug, market cap) beserta angkanya ada di n8n.
 
 | row | isi |

@@ -161,10 +161,13 @@ const EMPTY = {
 // Proses satu coin: baca Axiom lalu GMGN, selalu keduanya (filter dinilai di n8n).
 // Status: OK / AXIOM_GAGAL / GMGN_GAGAL / ERROR. row['9'] (aHolders) = holder dari tab "Holders (n)",
 // cadangan dari kotak statistik.
-async function scrapeCoin(page, pw, coin) {
+// onStep (opsional): dipanggil dengan nama langkah ('Axiom' / 'GMGN') untuk log progres
+async function scrapeCoin(page, pw, coin, onStep = () => {}) {
     const base = { ...EMPTY, name: coin.name, ca: coin.ca };
     try {
+        onStep('Axiom');
         const ax = await readAxiom(page, pw, coin.ca);
+        onStep('GMGN');
         const gm = await readGmgn(page, pw, coin.ca);
         const axOk = ax.ok && ax.holders >= 0;
         const status = !axOk ? 'AXIOM_GAGAL' : (gm.ok ? 'OK' : 'GMGN_GAGAL');
@@ -178,4 +181,4 @@ async function scrapeCoin(page, pw, coin) {
     }
 }
 
-module.exports = { readPulse, readAxiom, readGmgn, scrapeCoin };
+module.exports = { readPulse, readAxiom, readGmgn, scrapeCoin, EMPTY };

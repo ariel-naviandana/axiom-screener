@@ -36,6 +36,12 @@ const defaults = {
     gmgnWaitMs: 20000,
     axiomSettleMs: 1500,  // jeda setelah detail Axiom termuat
     gmgnSettleMs: 5000,   // jeda setelah statistik GMGN muncul (macro: 10 dtk)
+
+    // Pengaman macet (tab hang / crash). Normal satu coin ~40-55 dtk.
+    coinTimeoutMs: 3 * 60 * 1000,      // batas satu coin (Axiom + GMGN); lewat = status TIMEOUT, tab diganti baru
+    screenerTimeoutMs: 20 * 60 * 1000, // batas satu siklus screener; lewat = dihentikan paksa, jadwal berikutnya jalan
+    // batas satu siklus watcher = jumlah coin x coinTimeoutMs + watcherTimeoutExtraMs
+    watcherTimeoutExtraMs: 3 * 60 * 1000,
 };
 
 function loadPwConfig() {

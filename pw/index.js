@@ -6,7 +6,7 @@
 const cron = require('node-cron');
 const { loadPwConfig } = require('./config');
 const { openBrowser } = require('./browser');
-const { runScreener, runWatcher } = require('./jobs');
+const { runScreener, runWatcher, progress } = require('./jobs');
 const { log, sleep } = require('./util');
 
 const pw = loadPwConfig();
@@ -39,7 +39,7 @@ const only = process.argv[2]; // "screener" | "watcher" | undefined (dua-duanya)
         let busy = false;
         const tick = async () => {
             if (busy) {
-                log('SCREENER', 'Siklus sebelumnya belum selesai, jadwal ini dilewati');
+                log('SCREENER', `Siklus sebelumnya belum selesai (${progress.SCREENER}), jadwal ini dilewati`);
                 return;
             }
             busy = true;
