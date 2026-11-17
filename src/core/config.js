@@ -24,6 +24,7 @@ const defaults = {
     userDataDir: 'C:\\chrome-profiles\\axiom-playwright', // profil khusus bot (login sekali)
     headless: false,          // true lebih ringan, tapi lebih mudah dicegat anti-bot
     blockResources: true,     // jangan muat gambar/video/font
+    viewport: null,           // null = ikut ukuran jendela (maximize); isi { width, height } untuk ukuran tetap
     outputDir: 'C:\\uivision\\datasources',
     watchlistPath: 'C:\\uivision\\datasources\\axiom_watchlist.csv',
 

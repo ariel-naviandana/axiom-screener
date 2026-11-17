@@ -52,6 +52,7 @@ Semua key opsional, nilai bawaan ada di `src/core/config.js`.
 - `userDataDir`: profil Chrome khusus bot (sesi login tersimpan di sini).
 - `headless: true` lebih ringan, tapi lebih mudah terdeteksi anti-bot. Coba `false` dulu.
 - `blockResources`: tidak memuat gambar/video/font untuk hemat CPU & RAM.
+- `viewport`: bawaan `null` = halaman ikut ukuran jendela Chrome (dibuka maximize); isi `{ "width": 1600, "height": 1000 }` untuk ukuran tetap.
 - `outputDir`, `watchlistPath`: folder CSV hasil dan lokasi watchlist.
 - `pulseGridXpath`: tabel Pulse yang dibaca (bawaan: tabel pertama; layout Pulse "Migrated only").
 - `topN`, `screenerSchedule`, `screenerRunOnStart`, `watcherIntervalMs`: jadwal & jumlah coin.
