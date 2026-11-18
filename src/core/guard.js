@@ -23,6 +23,16 @@ function withTimeout(promise, ms, label) {
 
 async function closePage(page, tag, ms = 10000) {
     if (!page || page.isClosed()) return;
+    // Jangan sampai tab ini jadi tab terakhir yang ditutup: Chrome (mode berjendela) ikut keluar
+    try {
+        const ctx = page.context();
+        if (!ctx.pages().some((p) => p !== page && !p.isClosed())) {
+            log(tag, 'Tidak ada tab lain, buka tab kosong dulu supaya Chrome tidak ikut tertutup');
+            await withTimeout(ctx.newPage(), 15000, 'Buka tab cadangan');
+        }
+    } catch (e) {
+        log(tag, `Gagal buka tab cadangan: ${e.message}`);
+    }
     const done = await Promise.race([
         page.close().then(() => true, () => true),
         sleep(ms).then(() => false),

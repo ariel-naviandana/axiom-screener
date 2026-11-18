@@ -10,6 +10,10 @@ const { runScreener } = require('./jobs/screener');
 const { runWatcher } = require('./jobs/watcher');
 const { progress } = require('./jobs/cycle');
 
+const KEEPER_HTML = '<title>JANGAN DITUTUP - axiom bot</title>'
+    + '<body style="font:16px sans-serif;padding:24px">Tab penjaga axiom bot. Jangan ditutup: '
+    + 'kalau semua tab tertutup, Chrome ikut tertutup dan bot berhenti.</body>';
+
 function start(only) {
     const pw = loadPwConfig();
 
@@ -24,13 +28,26 @@ function start(only) {
         console.log('='.repeat(50));
 
         const context = await openBrowser(pw);
-        // Tab bawaan dibiarkan terbuka sebagai penjaga: kalau semua tab tertutup,
-        // Chrome (mode berjendela) ikut menutup dan bot berhenti.
-        const keepAlive = context.pages()[0] || await context.newPage();
-        await keepAlive.goto('about:blank').catch(() => {});
+        let closing = false;
 
-        // Kalau browser tertutup (mis. jendela ditutup manual), hentikan bot dengan jelas
+        // Tab penjaga: kalau semua tab tertutup, Chrome (mode berjendela) ikut menutup dan bot berhenti.
+        // Diberi judul jelas, dan kalau tertutup langsung dibuka lagi.
+        const openKeeper = async (page) => {
+            const p = page || await context.newPage();
+            await p.setContent(KEEPER_HTML).catch(() => {});
+            p.on('close', () => {
+                if (closing) return;
+                log('BOT', `Tab penjaga tertutup (sisa ${context.pages().length} tab), membuka tab penjaga baru`);
+                openKeeper().catch((e) => log('BOT', `Gagal membuka tab penjaga: ${e.message}`));
+            });
+            p.on('crash', () => log('BOT', 'Tab penjaga crash'));
+            return p;
+        };
+        await openKeeper(context.pages()[0]);
+
+        // Kalau browser tertutup (jendela ditutup manual / Chrome crash), hentikan bot dengan jelas
         context.on('close', () => {
+            if (closing) return;
             log('BOT', 'Browser tertutup, bot berhenti. Jalankan ulang: npm start');
             process.exit(1);
         });
@@ -78,6 +95,7 @@ function start(only) {
         }
 
         const shutdown = async () => {
+            closing = true;
             log('BOT', 'Menutup browser...');
             await context.close().catch(() => {});
             process.exit(0);
