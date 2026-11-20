@@ -9,6 +9,7 @@ const { log, sleep } = require('./core/util');
 const { runScreener } = require('./jobs/screener');
 const { runWatcher } = require('./jobs/watcher');
 const { progress } = require('./jobs/cycle');
+const { setLogDir } = require('./core/file-log');
 
 const KEEPER_HTML = '<title>JANGAN DITUTUP - axiom bot</title>'
     + '<body style="font:16px sans-serif;padding:24px">Tab penjaga axiom bot. Jangan ditutup: '
@@ -16,6 +17,7 @@ const KEEPER_HTML = '<title>JANGAN DITUTUP - axiom bot</title>'
 
 function start(only) {
     const pw = loadPwConfig();
+    setLogDir(pw.outputDir, { enabled: pw.terminalLog, prefix: pw.terminalLogPrefix });
 
     (async () => {
         console.log('='.repeat(50));

@@ -5,6 +5,8 @@
     "headless": false,
     "blockResources": true,
     "outputDir": "C:\\uivision\\datasources",
+    "terminalLog": true,
+    "terminalLogPrefix": "axiom_log",
     "watchlistPath": "C:\\uivision\\datasources\\axiom_watchlist.csv",
     "topN": 10,
     "screenerSchedule": "0,10,20,30,40,50 * * * *",

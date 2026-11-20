@@ -5,6 +5,8 @@
 //   node src/index.js login      login Axiom & GMGN   (npm run login)
 // Output CSV sama dengan versi UI.Vision lama, jadi workflow n8n tidak berubah.
 const mode = process.argv[2];
+// log terminal bot ikut disimpan ke CSV harian (axiom_log_YYYY-MM-DD.csv di folder output)
+if (mode !== 'login') require('./core/file-log').installFileLog('axiom_log');
 if (mode === 'login') {
     require('./login');
 } else if (!mode || mode === 'screener' || mode === 'watcher') {

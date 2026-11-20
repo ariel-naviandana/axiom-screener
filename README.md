@@ -54,6 +54,7 @@ Semua key opsional, nilai bawaan ada di `src/core/config.js`.
 - `blockResources`: tidak memuat gambar/video/font untuk hemat CPU & RAM.
 - `viewport`: bawaan `null` = halaman ikut ukuran jendela Chrome (dibuka maximize); isi `{ "width": 1600, "height": 1000 }` untuk ukuran tetap.
 - `outputDir`, `watchlistPath`: folder CSV hasil dan lokasi watchlist.
+- `terminalLog`, `terminalLogPrefix`: log terminal ikut disimpan ke CSV harian di `outputDir` (`axiom_log_YYYY-MM-DD.csv`, kolom ts, tag, level, message). `terminalLog: false` untuk mematikan.
 - `pulseGridXpath`: tabel Pulse yang dibaca (bawaan: tabel pertama; layout Pulse "Migrated only").
 - `topN`, `screenerSchedule`, `screenerRunOnStart`, `watcherIntervalMs`: jadwal & jumlah coin.
 - Filter awal screener (`filter`, watcher tidak difilter) -> status `SKIP`, supaya lebih cepat:

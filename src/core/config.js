@@ -26,6 +26,8 @@ const defaults = {
     blockResources: true,     // jangan muat gambar/video/font
     viewport: null,           // null = ikut ukuran jendela (maximize); isi { width, height } untuk ukuran tetap
     outputDir: 'C:\\uivision\\datasources',
+    terminalLog: true,        // log terminal ikut disimpan ke CSV harian di outputDir
+    terminalLogPrefix: 'axiom_log', // nama file: <prefix>_YYYY-MM-DD.csv
     watchlistPath: 'C:\\uivision\\datasources\\axiom_watchlist.csv',
 
     axiomPulseUrl: 'https://axiom.trade/pulse?chains=sol,robinhood,arc,bnb,ink,hype,base,eth&pulseChains=sol&trackerChains=sol,robinhood,arc,bnb,ink,hype,base,eth&discoverChains=sol,robinhood,arc,bnb,ink,hype,base,eth',
