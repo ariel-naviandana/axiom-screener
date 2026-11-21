@@ -3,11 +3,25 @@
 //   xHandle  akun X/Twitter coin (@...)
 //   xType    jenis kartu X di baris: "post" (tweet) / "profile" (profil akun) / "-" kalau tidak ada
 //   xText    isi tweet (kartu post) atau bio akun (kartu profile)
+//   xUrl     link tweet (kartu post), dari atribut data-href / link ikon X
+//   xPostedAt waktu tweet diposting (WIB), dihitung dari id tweet (id X berisi timestamp), bukan dari label "29m"
 //   kol      jumlah KOL (ikon piala, kartu hover berisi daftar KOL)
 //   holders  jumlah holder (ikon grup), dipakai filter awal screener
-const { sleep, mcap } = require('../core/util');
+const { sleep, mcap, nowTs } = require('../core/util');
 
 const CA_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
+// Waktu posting dari id tweet: (id >> 22) + 1288834974657 ms. '-' kalau id tidak ada / tidak masuk akal.
+function tweetTime(url) {
+    const m = String(url || '').match(/\/status\/(\d+)/);
+    if (!m) return '-';
+    try {
+        const ms = Number((BigInt(m[1]) >> 22n) + 1288834974657n);
+        return ms > 1.2e12 && ms < Date.now() + 864e5 ? nowTs(new Date(ms)) : '-';
+    } catch {
+        return '-';
+    }
+}
 
 // Isi baris Pulse ke-i (dijalankan di halaman). null kalau baris belum ter-render.
 function readRow({ grid, i }) {
@@ -28,6 +42,13 @@ function readRow({ grid, i }) {
             xText = clean(el.textContent);
         }
     }
+    // link tweet (hanya kartu post): data-href di kartu, atau link ikon X
+    let xUrl = '';
+    if (xCard) {
+        const urls = [...xCard.querySelectorAll('[data-href], a[href]')]
+            .map((e) => e.getAttribute('data-href') || e.getAttribute('href') || '');
+        xUrl = (urls.find((u) => /\/status\/\d+/.test(u)) || '').split('?')[0];
+    }
     const iconVal = (sel) => {
         const ic = r.querySelector(sel);
         const el = ic && ic.parentElement ? ic.parentElement.querySelector('span') : null;
@@ -42,6 +63,7 @@ function readRow({ grid, i }) {
         xType: xCard ? xCard.getAttribute('data-pulse-x-card') || '-' : '-',
         xState: xCard ? xCard.getAttribute('data-pulse-x-card-state') || '' : 'none',
         xText: xText || '-',
+        xUrl: xUrl || '-',
         kol: kolEl ? clean(kolEl.textContent) : '',
         holders: iconVal('i.ri-group-line'),
     };
@@ -89,7 +111,7 @@ async function readPulse(page, pw, tag) {
             coins.push({
                 ca,
                 name: String(row.name || '').replace(/[,\r\n"]/g, ' ').trim(),
-                pulse: { xHandle: row.xHandle, xType: row.xType, xText: row.xText, kol: Number.isFinite(kol) ? kol : -1, holders },
+                pulse: { xHandle: row.xHandle, xType: row.xType, xText: row.xText, xUrl: row.xUrl, xPostedAt: tweetTime(row.xUrl), kol: Number.isFinite(kol) ? kol : -1, holders },
             });
         }
     }

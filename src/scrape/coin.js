@@ -12,6 +12,8 @@ const EMPTY = {
     ...EMPTY_MIG,
     xHandle: '-', xType: '-', xText: '-', kol: -1, // dari baris Pulse (screener saja)
     aFees: -1,
+    xPostedAt: '-', xUrl: '-', // tweet: waktu posting & link (kartu post di Pulse, screener saja)
+    createdAt: '-', // waktu coin dibuat (detail Axiom)
     skip: '-', // alasan SKIP
 };
 
@@ -55,7 +57,7 @@ async function scrapeCoin(page, pw, coin, onStep = () => {}) {
         if (useFilter && axOk) {
             if (ax.migVol >= 0 && ax.migVol < f.minMigVol) {
                 // hanya data migrasi, holder, dan volume yang dicatat
-                const keep = ['aHolders', 'migAt', 'migVol', 'lastVol', 'migNote'];
+                const keep = ['aHolders', 'createdAt', 'ageNote', 'migAt', 'migVol', 'lastVol', 'migNote'];
                 return skip(`MIGVOL ${ax.migVol} < ${f.minMigVol}`, Object.fromEntries(keep.map((k) => [k, axData[k]])));
             }
             const fail = axiomRules(f, axData);

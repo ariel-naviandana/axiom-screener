@@ -2,6 +2,7 @@
 // (+ candle migrasi & volume candle terbaru, lihat migcandle.js)
 const { num, mcap, txt, sleep } = require('../core/util');
 const { captureChart, readMigCandle } = require('./migcandle');
+const { readAge } = require('./age');
 
 async function readAxiom(page, pw, ca) {
     const res = { ok: false, holders: -1 };
@@ -49,6 +50,11 @@ async function readAxiom(page, pw, ca) {
     const m = String(raw.holderTab || '').match(/\((\d[\d,]*)\)/);
     res.holders = m ? parseInt(m[1].replace(/,/g, ''), 10) : res.aHolders;
     res.ok = true;
+
+    // waktu coin dibuat (hover label umur di header). Gagal baca = '-', status tidak terpengaruh
+    const ageRes = await readAge(page);
+    res.createdAt = ageRes.createdAt;
+    if (ageRes.note) res.ageNote = ageRes.note;
 
     // candle migrasi & volume candle terbaru
     if (waitChart) {

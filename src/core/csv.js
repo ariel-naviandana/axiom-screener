@@ -43,8 +43,11 @@ const COLUMNS = [
     'xText',       // row['29'] isi tweet (post) atau bio akun (profile)
     'kol',         // row['30'] jumlah KOL
     'aFees',       // row['31'] Global Fees Paid (SOL), detail Axiom
-    'skip',        // row['32'] alasan SKIP, '-' kalau tidak di-skip
-    'status',      // row['33'] OK / AXIOM_GAGAL / GMGN_GAGAL / ERROR / TIMEOUT / SKIP
+    'xPostedAt',   // row['32'] waktu tweet diposting (WIB), dari id tweet; '-' kalau bukan kartu post (screener saja)
+    'xUrl',        // row['33'] link tweet (https://x.com/<akun>/status/<id>); '-' kalau tidak ada
+    'createdAt',   // row['34'] waktu coin dibuat (WIB, yyyy-MM-dd HH:mm:ss), dari tooltip label umur di detail Axiom; '-' kalau tidak terbaca
+    'skip',        // row['35'] alasan SKIP, '-' kalau tidak di-skip
+    'status',      // row['36'] OK / AXIOM_GAGAL / GMGN_GAGAL / ERROR / TIMEOUT / SKIP
 ];
 
 // Tulis satu baris (append) ke file CSV

@@ -37,6 +37,7 @@ src/
 │  ├─ axiom.js         statistik detail Axiom
 │  ├─ gmgn.js          statistik GMGN
 │  ├─ migcandle.js     candle migrasi (data chart Axiom + waktu migrasi DexScreener)
+│  ├─ age.js           waktu coin dibuat (hover label umur di header Axiom)
 │  └─ coin.js          satu coin: Axiom + GMGN + status
 └─ jobs/
    ├─ cycle.js         tab, batas waktu siklus/coin, tulis CSV (bersama)
@@ -89,8 +90,11 @@ Status: `OK` / `AXIOM_GAGAL` / `GMGN_GAGAL` / `ERROR` / `TIMEOUT` (coin macet, d
 | `row['29']` | isi tweet (`post`) atau bio akun (`profile`) |
 | `row['30']` | jumlah KOL (ikon piala) |
 | `row['31']` | Global Fees Paid (SOL), header detail Axiom |
-| `row['32']` | alasan `SKIP` (`-` kalau tidak di-skip) |
-| `row['33']` | status |
+| `row['32']` | waktu tweet diposting (WIB), dihitung dari id tweet; `-` kalau bukan kartu post |
+| `row['33']` | link tweet (`https://x.com/<akun>/status/<id>`), `-` kalau tidak ada |
+| `row['34']` | waktu coin dibuat (WIB, `yyyy-MM-dd HH:mm:ss`), `-` kalau tidak terbaca |
+| `row['35']` | alasan `SKIP` (`-` kalau tidak di-skip) |
+| `row['36']` | status |
 
 Kolom 27-30 hanya terisi untuk screener (dibaca dari baris Pulse); watcher mengisi `-` / -1.
 Urutan lengkap kolom ada di `src/core/csv.js`.

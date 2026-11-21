@@ -95,7 +95,10 @@ async function scrapeList(tag, ctl, pw, coins, file) {
         log(tag, `${i + 1}/${coins.length} ${coin.name} | holders=${holders} | top10=${row.aTop10} `
             + `bundler=${row.aBundlers} insider=${row.aInsiders} | mcap=${row.aMcap} | ${row.status}`
             + (row.xHandle !== '-' || row.kol >= 0 ? ` | X ${row.xHandle} (${row.xType}) KOL=${row.kol}` : '')
-            + ` | fees=${row.aFees}`
+            + ` | fees=${row.aFees} | created=${row.createdAt}`
+            + (row.xPostedAt !== '-' ? ` | tweet ${row.xPostedAt}` : '')
+            + (row.xUrl && row.xUrl !== '-' ? ` | ${row.xUrl}` : '')
+            + (row.ageNote ? ` [umur: ${row.ageNote}]` : '')
             + (row.status === 'SKIP' ? ` | SKIP: ${row.skip}` : '')
             + (pw.migCandle ? ` | mig ${row.migAt} vol=${row.migVol} lastVol=${row.lastVol}`
                 + (row.migNote ? ` [${row.migNote}]` : '') : '')
